@@ -28,6 +28,7 @@ import java.lang.reflect.Type;
 
 /**
  * 用来处理泛型
+ * getGenericSuperclass、getActualTypeArguments 参考：https://blog.csdn.net/qq_26424655/article/details/71515741
  * @param <T>
  */
 public abstract class TypeReference<T> {
