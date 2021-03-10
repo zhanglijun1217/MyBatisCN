@@ -111,6 +111,7 @@ public class MapWrapper extends BaseWrapper {
 
   @Override
   public boolean hasSetter(String name) {
+    // MapWrapper hasSetter 默认返回true
     return true;
   }
 
@@ -129,6 +130,7 @@ public class MapWrapper extends BaseWrapper {
         return false;
       }
     } else {
+      // map中是否有key
       return map.containsKey(prop.getName());
     }
   }

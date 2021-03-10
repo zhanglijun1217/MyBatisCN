@@ -24,6 +24,9 @@ import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
 /**
  * @author Clinton Begin
+ * BaseWrapper没有实现ObjectWrapper中的方法，提供了
+ *    1.metaObject元对象
+ *    2.resolveCollection、getCollectionValue、setCollectionValue的工具方法
  */
 public abstract class BaseWrapper implements ObjectWrapper {
 
