@@ -38,11 +38,12 @@ import org.apache.ibatis.reflection.ArrayUtil;
  * @author Clinton Begin
  * @author Eduardo Macarron
  *
- * 该包能够代理打印JDBC日志
+ * 该包能够代理打印JDBC日志 执行sql过程中将sql参数、返回行数、结果写入具体的日志文件中
+ * logging.jdbc包下其他Logger实现的父类
  */
 public abstract class BaseJdbcLogger {
 
-  // 记录了PreparedStatement中的setter
+  // 记录了PreparedStatement中的setter方法
   protected static final Set<String> SET_METHODS;
   // 里面记录了执行SQL操作的方法名，这些方法名是固定的，因此是常量
   protected static final Set<String> EXECUTE_METHODS = new HashSet<>();

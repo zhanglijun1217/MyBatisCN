@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 /**
  * @author Clinton Begin
  * @author Eduardo Macarron
+ * 日志工厂
  */
 public final class LogFactory {
 
@@ -31,6 +32,7 @@ public final class LogFactory {
   private static Constructor<? extends Log> logConstructor;
 
   static {
+    // 静态代码块中加载各个适配器
     tryImplementation(LogFactory::useSlf4jLogging);
     tryImplementation(LogFactory::useCommonsLogging);
     tryImplementation(LogFactory::useLog4J2Logging);
@@ -94,7 +96,10 @@ public final class LogFactory {
    */
   private static void tryImplementation(Runnable runnable) {
     if (logConstructor == null) {
+      // 判断logConstructor是否为空 如果为空才去加载
+      // 不为空说明已经确认了当前日志的适配类
       try {
+        // 尝试从runnable.run方法中获取当前的日志框架
         runnable.run();
       } catch (Throwable t) {
         // ignore
@@ -116,6 +121,7 @@ public final class LogFactory {
         log.debug("Logging initialized using '" + implClass + "' adapter.");
       }
       // 如果运行到这里，说明没有异常发生。则实例化日志实现类成功。
+      // 记录适配器的构造函数
       logConstructor = candidate;
     } catch (Throwable t) {
       throw new LogException("Error setting Log implementation.  Cause: " + t, t);

@@ -27,7 +27,7 @@ import org.apache.ibatis.reflection.ExceptionUtil;
 
 /**
  * Connection proxy to add logging.
- *
+ * 继承BaseJdbcLogger 实现了InvocationHandler接口 利用jdk动态代理完成connection 日志记录功能
  * @author Clinton Begin
  * @author Eduardo Macarron
  *
@@ -43,6 +43,7 @@ public final class ConnectionLogger extends BaseJdbcLogger implements Invocation
 
   /**
    * 代理方法
+   * 为Connection接口中的 prepareStatement、prepareCall、createStatement方法加代理逻辑
    * @param proxy 代理对象
    * @param method 代理方法
    * @param params 代理方法的参数
@@ -55,6 +56,7 @@ public final class ConnectionLogger extends BaseJdbcLogger implements Invocation
     try {
       // 获得方法来源，如果方法继承自Object类则直接交由目标对象执行
       if (Object.class.equals(method.getDeclaringClass())) {
+        // object方法直接调用
         return method.invoke(this, params);
       }
       if ("prepareStatement".equals(method.getName())) { // Connection中的prepareStatement方法
@@ -82,7 +84,7 @@ public final class ConnectionLogger extends BaseJdbcLogger implements Invocation
         // 返回一个Statement的代理，该代理中加入了对Statement的日志打印操作
         stmt = StatementLogger.newInstance(stmt, statementLog, queryStack);
         return stmt;
-      } else { // 其它方法
+      } else { // 其它方法 没有代理逻辑 直接调用
         return method.invoke(connection, params);
       }
     } catch (Throwable t) {

@@ -27,6 +27,11 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * 1.通过sqlSessionFactory中的configuration获取 typeHandlerRegistry注册一个自定义的去重空格的typeHandler
+ * 2.createdb.sql 创建表和插进去数据 带空格的数据
+ * 3. 查询出来因为走了trimTypeHandler 所以都会自动去除空格
+ */
 public class TypeHandlerTest {
 
   private static SqlSessionFactory sqlSessionFactory;

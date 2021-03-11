@@ -17,6 +17,8 @@ package org.apache.ibatis.logging;
 
 /**
  * @author Clinton Begin
+ * 适配器要实现的接口
+ *  mybatis通过适配器设计模式 兼容了不同的日志框架
  */
 public interface Log {
 
