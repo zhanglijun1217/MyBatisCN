@@ -25,6 +25,7 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 
 /**
+ * mybatis自己实现的数据源UnpooledDataSource的工厂
  * @author Clinton Begin
  */
 public class UnpooledDataSourceFactory implements DataSourceFactory {
@@ -50,7 +51,9 @@ public class UnpooledDataSourceFactory implements DataSourceFactory {
     // 驱动的属性
     Properties driverProperties = new Properties();
     // 生成一个包含DataSource对象的元对象
+    // 会调用反射模块的工具 Reflector、ObjectWrapper、MetaObject等
     MetaObject metaDataSource = SystemMetaObject.forObject(dataSource);
+    // 设置属性会依赖MetaObject的一些方法：hasSetter、setValue、getSetterType
     // 设置属性
     for (Object key : properties.keySet()) {
       String propertyName = (String) key;
@@ -80,6 +83,7 @@ public class UnpooledDataSourceFactory implements DataSourceFactory {
 
   private Object convertValue(MetaObject metaDataSource, String propertyName, String value) {
     Object convertedValue = value;
+    // set方法参数的类型
     Class<?> targetType = metaDataSource.getSetterType(propertyName);
     if (targetType == Integer.class || targetType == int.class) {
       convertedValue = Integer.valueOf(value);

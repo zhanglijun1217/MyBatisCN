@@ -20,6 +20,8 @@ import java.util.List;
 
 /**
  * @author Clinton Begin
+ * 用来控制、管理数据库连接池中的所有PooledConnection的状态
+ *  是不是考虑无锁化性能更高？？
  */
 // 存储了所有的连接
 public class PoolState {
@@ -34,23 +36,29 @@ public class PoolState {
   protected long requestCount = 0;
   // 取出请求花费时间的累计值。从准备取出请求到取出结束的时间为取出请求花费的时间
   protected long accumulatedRequestTime = 0;
-  // 累积被检出的时间
+  // 累积被检出的时间 所有连接的 checkoutTime 累加。
+  // PooledConnection 中有一个 checkoutTime 属性，
+  // 表示的是使用方从连接池中取出连接到归还连接的总时长，也就是连接被使用的时长。
   protected long accumulatedCheckoutTime = 0;
-  // 声明的过期连接数
+  // 声明的过期连接数。
+  // 当连接长时间未归还给连接池时，会被认为该连接超时，该字段记录了超时的连接个数。
   protected long claimedOverdueConnectionCount = 0;
-  // 过期的连接数的总检出时长
+  // 过期的连接数的总检出时长 累计超时时间
   protected long accumulatedCheckoutTimeOfOverdueConnections = 0;
   // 总等待时间
+  // 当连接池全部连接已经被占用之后，新的请求会阻塞等待，该字段就记录了累积的阻塞等待总时间。
   protected long accumulatedWaitTime = 0;
-  // 等待的轮次
+  // 等待的轮次 记录了阻塞等待总次数
+  // 某次请求等待多轮也只能算作发生了一次等待
   protected long hadToWaitCount = 0;
-  // 坏连接的数目
+  // 坏连接的数目 无效连接数
   protected long badConnectionCount = 0;
 
   public PoolState(PooledDataSource dataSource) {
     this.dataSource = dataSource;
   }
 
+  // 方法都是直接上锁的
   public synchronized long getRequestCount() {
     return requestCount;
   }

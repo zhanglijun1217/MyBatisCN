@@ -26,17 +26,19 @@ import org.apache.ibatis.reflection.ExceptionUtil;
 /**
  * @author Clinton Begin
  * 这是对真正的Connection的封装
+ * Mybatis实现的数据库连接池中的连接
+ * 详见：PooledDataSource
  */
 class PooledConnection implements InvocationHandler {
 
   private static final String CLOSE = "close";
   private static final Class<?>[] IFACES = new Class<?>[] { Connection.class };
 
-  // 该连接的哈希值
+  // 该连接的哈希值 realConnection的hash值
   private final int hashCode;
-  // 该连接所属的连接池
+  // 该连接所属的连接池 表明当前pooledConnection是由此dataSource创建的
   private final PooledDataSource dataSource;
-  // 真正的Connection
+  // 真正的Connection 也是代理proxy 持有真正的连接对象
   private final Connection realConnection;
   // 代理Connection
   private final Connection proxyConnection;
@@ -47,8 +49,12 @@ class PooledConnection implements InvocationHandler {
   // 上次使用时间
   private long lastUsedTimestamp;
   // 标志所在连接池的连接类型编码
+  // 由url、username、password做hash的值，主要用来确认连接归属的连接池
   private int connectionTypeCode;
   // 连接是否可用
+  // 用于标识 PooledConnection 对象是否有效。
+  // 该字段的主要目的是防止使用方将连接归还给连接池之后，
+  // 依然保留该 PooledConnection 对象的引用并继续通过该 PooledConnection 对象操作数据库。
   private boolean valid;
 
   /**
@@ -65,6 +71,8 @@ class PooledConnection implements InvocationHandler {
     this.lastUsedTimestamp = System.currentTimeMillis();
     this.valid = true;
     // 参数依次是：被代理对象的类加载器  被代理对象的接口 包含代理对象的类（实现InvocationHandler接口的类）
+    // proxyConnection是当前实现invocationHandler接口创建的代理PooledConnection对象
+    // 而代理实现的接口为真正的collection
     this.proxyConnection = (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), IFACES, this);
   }
 
@@ -250,19 +258,21 @@ class PooledConnection implements InvocationHandler {
    */
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-    // 获取方法名
+    // 获取方法名 注意这里代理的是Connection接口
     String methodName = method.getName();
     if (CLOSE.hashCode() == methodName.hashCode() && CLOSE.equals(methodName)) { // 如果调用了关闭方法
-      // 那么把Connection返回给连接池，而不是真正的关闭
+      // 只拦截了close方法 通过动态代理实现close时 不去真正的关闭 而是归还给pooledDataSource
+      // 那么把Connection返回给连接池，而不是真正的关闭 此方法是dataSource提供的收回一个连接
       dataSource.pushConnection(this);
       return null;
     }
     try {
       // 校验连接是否可用
       if (!Object.class.equals(method.getDeclaringClass())) {
+        // 不是object的方法 检查connection的valid
         checkConnection();
       }
-      // 用真正的连接去执行操作
+      // 其他方法没有拦截逻辑 只不过是去执行操作
       return method.invoke(realConnection, args);
     } catch (Throwable t) {
       throw ExceptionUtil.unwrapThrowable(t);

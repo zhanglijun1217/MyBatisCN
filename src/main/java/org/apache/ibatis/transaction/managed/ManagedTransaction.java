@@ -36,6 +36,7 @@ import org.apache.ibatis.transaction.Transaction;
  */
 // 由容器进行事务管理
 // 因此大多数操作这里不需要处理
+  // 委托给其他容器进行书事务管理
 public class ManagedTransaction implements Transaction {
 
   private static final Log log = LogFactory.getLog(ManagedTransaction.class);
@@ -92,6 +93,7 @@ public class ManagedTransaction implements Transaction {
       if (log.isDebugEnabled()) {
         log.debug("Closing JDBC Connection [" + this.connection + "]");
       }
+      // 关闭也关闭连接
       this.connection.close();
     }
   }

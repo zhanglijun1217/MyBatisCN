@@ -19,6 +19,7 @@ import org.apache.ibatis.datasource.unpooled.UnpooledDataSourceFactory;
 
 /**
  * @author Clinton Begin
+ * Mybatis自己实现的数据源PooledDataSource的工厂
  */
 public class PooledDataSourceFactory extends UnpooledDataSourceFactory {
 
