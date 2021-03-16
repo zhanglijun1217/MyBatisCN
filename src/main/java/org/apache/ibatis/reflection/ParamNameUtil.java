@@ -34,6 +34,7 @@ public class ParamNameUtil {
   }
 
   // 获取方法（Executable的子类包含构造方法和一般方法）的参数列表
+  // Executable子类有构造函数/Method等
   private static List<String> getParameterNames(Executable executable) {
     return Arrays.stream(executable.getParameters()).map(Parameter::getName).collect(Collectors.toList());
   }

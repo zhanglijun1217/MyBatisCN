@@ -15,15 +15,6 @@
  */
 package org.apache.ibatis.binding;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import org.apache.ibatis.annotations.Flush;
 import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.cursor.Cursor;
@@ -38,6 +29,15 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.session.SqlSession;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 /**
  * @author Clinton Begin
  * @author Eduardo Macarron
@@ -46,7 +46,7 @@ import org.apache.ibatis.session.SqlSession;
  */
 public class MapperMethod {
 
-  // 记录了sql的名称和类型
+  // 记录了sql的名称和类型 维护了关联sql语句的相关信息
   private final SqlCommand command;
   // 对应的方法签名
   private final MethodSignature method;
@@ -65,7 +65,8 @@ public class MapperMethod {
   }
 
   /**
-   * 执行映射接口中的方法
+   * 执行映射接口中的方法 MapperMethod的核心方法
+   * execute方法会根据要执行的sql语句的具体类型执行sqlsession的具体方法完成数据库操作
    * @param sqlSession sqlSession接口的实例，通过它可以进行数据库的操作
    * @param args 执行接口方法时传入的参数
    * @return 数据库操作结果
@@ -77,6 +78,7 @@ public class MapperMethod {
         // 将参数顺序与实参对应好
         Object param = method.convertArgsToSqlCommandParam(args);
         // 执行操作并返回结果
+        // rowCounntResult方法会根据方法的返回值类型对结果进行转换
         result = rowCountResult(sqlSession.insert(command.getName(), param));
         break;
       }
@@ -95,6 +97,12 @@ public class MapperMethod {
         break;
       }
       case SELECT: // 如果是查询语句
+        /**
+         * 如果在方法参数列表中有 ResultHandler 类型的参数存在，则会使用 executeWithResultHandler() 方法完成查询，底层依赖的是 SqlSession.select() 方法，结果集将会交由传入的 ResultHandler 对象进行处理。
+         * 如果方法返回值为集合类型或是数组类型，则会调用 executeForMany() 方法，底层依赖 SqlSession.selectList() 方法进行查询，并将得到的 List 转换成目标集合类型。
+         * 如果方法返回值为 Map 类型，则会调用 executeForMap() 方法，底层依赖 SqlSession.selectMap() 方法完成查询，并将结果集映射成 Map 集合。
+         * 针对 Cursor 以及 Optional返回值的处理，也是依赖的 SqlSession 的相关方法完成查询的，这里不再展开。
+         */
         if (method.returnsVoid() && method.hasResultHandler()) { // 方法返回值为void，且有结果处理器
           // 使用结果处理器执行查询
           executeWithResultHandler(sqlSession, args);
@@ -128,6 +136,15 @@ public class MapperMethod {
     return result;
   }
 
+  /**
+   * Mapper 方法返回值为 void，则忽略 SQL 语句的 int 返回值，直接返回 null；
+   *
+   * Mapper 方法返回值为 int 或 Integer 类型，则将 SQL 语句返回的 int 值直接返回；
+   *
+   * Mapper 方法返回值为 long 或 Long 类型，则将 SQL 语句返回的 int 值转换成 long 类型之后返回；
+   * @param rowCount
+   * @return
+   */
   private Object rowCountResult(int rowCount) {
     final Object result;
     if (method.returnsVoid()) {
@@ -173,8 +190,10 @@ public class MapperMethod {
     // issue #510 Collections & arrays support
     if (!method.getReturnType().isAssignableFrom(result.getClass())) {
       if (method.getReturnType().isArray()) {
+        // 对数组处理
         return convertToArray(result);
       } else {
+        // 利用反射工具箱 转换为生命的集合类型
         return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
       }
     }
@@ -194,8 +213,11 @@ public class MapperMethod {
   }
 
   private <E> Object convertToDeclaredCollection(Configuration config, List<E> list) {
+    // 利用objectFactory创建返回值类型的类
     Object collection = config.getObjectFactory().create(method.getReturnType());
+    // 创建metaObject
     MetaObject metaObject = config.newMetaObject(collection);
+    // 添加list
     metaObject.addAll(list);
     return collection;
   }
@@ -241,20 +263,30 @@ public class MapperMethod {
 
   public static class SqlCommand {
 
-    // SQL语句的名称
+    // SQL语句的名称 即唯一标识
     private final String name;
     // SQL语句的种类，一共分为以下六种：增、删、改、查、清缓存、未知
     private final SqlCommandType type;
 
+    /**
+     * 根据传入接口和方法封装sql信息
+     * @param configuration
+     * @param mapperInterface
+     * @param method
+     */
     public SqlCommand(Configuration configuration, Class<?> mapperInterface, Method method) {
       // 方法名称
       final String methodName = method.getName();
       // 方法所在的类。可能是mapperInterface，也可能是mapperInterface的子类
       final Class<?> declaringClass = method.getDeclaringClass();
+      // mapper接口名称、方法名称拼起来做唯一标识
+      // 到configuration全局配置对象中查找sql语句
+      // mappedStatement就是Mapper.xml配置文件中一条SQL解析之后得到的对象
       MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass,
           configuration);
       if (ms == null) {
         if (method.getAnnotation(Flush.class) != null) {
+          // 标记flush注解
           name = null;
           type = SqlCommandType.FLUSH;
         } else {
@@ -301,6 +333,7 @@ public class MapperMethod {
       // 从方法的定义类开始，沿着父类向上寻找。找到接口类时停止
       for (Class<?> superInterface : mapperInterface.getInterfaces()) {
         if (declaringClass.isAssignableFrom(superInterface)) {
+          // 递归查找父类
           MappedStatement ms = resolveMappedStatement(superInterface, methodName,
               declaringClass, configuration);
           if (ms != null) {
@@ -326,7 +359,7 @@ public class MapperMethod {
     private final boolean returnsOptional;
     // 返回类型
     private final Class<?> returnType;
-    // 如果返回为map,这里记录所有的map的key
+    // 如果返回为map,这里记录所有的map的key @MapKey注解
     private final String mapKey;
     // resultHandler参数的位置
     private final Integer resultHandlerIndex;
@@ -350,12 +383,15 @@ public class MapperMethod {
       this.returnsOptional = Optional.class.equals(this.returnType);
       this.mapKey = getMapKey(method);
       this.returnsMap = this.mapKey != null;
+      // rowBoundsIndex和resultHandlerIndex
       this.rowBoundsIndex = getUniqueParamIndex(method, RowBounds.class);
       this.resultHandlerIndex = getUniqueParamIndex(method, ResultHandler.class);
+      // 解析参数名称的工具类
       this.paramNameResolver = new ParamNameResolver(configuration, method);
     }
 
     public Object convertArgsToSqlCommandParam(Object[] args) {
+      // 通过传入实参获取 实参和参数名称的映射表
       return paramNameResolver.getNamedParams(args);
     }
 

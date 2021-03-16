@@ -30,12 +30,15 @@ import org.apache.ibatis.session.SqlSession;
  * @author Eduardo Macarron
  *
  * 参见代理模式，这是代理类本身，通过invoke方法代理被代理对象的操作
+ * 该类是生成Mapper接口代理对象的关键 定义了代理拦截
  *
  */
 public class MapperProxy<T> implements InvocationHandler, Serializable {
 
   private static final long serialVersionUID = -6424540398559729838L;
+  // 与当前mapperProxy关联的sqlSession对象 用于访问数据库
   private final SqlSession sqlSession;
+  // 被代理的mapper接口
   private final Class<T> mapperInterface;
   // 该Map的键为方法，值为MapperMethod对象。通过该属性，完成了MapperProxy内（即映射接口内）方法和MapperMethod的绑定
   private final Map<Method, MapperMethod> methodCache;
@@ -69,6 +72,8 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     return methodCache.computeIfAbsent(method, k -> new MapperMethod(mapperInterface, method, sqlSession.getConfiguration()));
   }
 
+  // 执行接口定义的默认方法
+  // 这里用了MethodHandle 相当于反射的Method 是jvm层支持的机制，更轻量级，性能也比反射好
   private Object invokeDefaultMethod(Object proxy, Method method, Object[] args)
       throws Throwable {
     final Constructor<MethodHandles.Lookup> constructor = MethodHandles.Lookup.class
@@ -81,6 +86,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
         .newInstance(declaringClass,
             MethodHandles.Lookup.PRIVATE | MethodHandles.Lookup.PROTECTED
                 | MethodHandles.Lookup.PACKAGE | MethodHandles.Lookup.PUBLIC)
+            // bindToProxy 去执行
         .unreflectSpecial(method, declaringClass).bindTo(proxy).invokeWithArguments(args);
   }
 
