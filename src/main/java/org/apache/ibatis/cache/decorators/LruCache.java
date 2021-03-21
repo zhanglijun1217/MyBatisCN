@@ -22,6 +22,8 @@ import org.apache.ibatis.cache.Cache;
 
 /**
  * Lru (least recently used) cache decorator.
+ * 最近最少使用淘汰算法实现的cache
+ * 利用持有的LinkedHashMap存放key实现lru
  *
  * @author Clinton Begin
  */
@@ -30,7 +32,9 @@ public class LruCache implements Cache {
   // 被装饰对象
   private final Cache delegate;
   // 使用LinkedHashMap保存的缓存数据的键
+  // 利用LinkedHashMap实现lru
   private Map<Object, Object> keyMap;
+
   // 最近最少使用的数据的键
   private Object eldestKey;
 
@@ -98,6 +102,7 @@ public class LruCache implements Cache {
   @Override
   public Object getObject(Object key) {
     // 触及一下当前被访问的键，表明它被访问了
+    // 以触发LinkedHashMap中被访问数据的移动
     keyMap.get(key);
     // 真正的查询操作
     return delegate.getObject(key);
@@ -119,9 +124,11 @@ public class LruCache implements Cache {
    * @param key 当前的键
    */
   private void cycleKeyList(Object key) {
-    keyMap.put(key, key);
+    keyMap.put(key, key); // 此时会触发LinkedHashMap 删除头结点 即最久没被访问的key
     if (eldestKey != null) {
+      // eldestKey != null说明到达阈值 根据key淘汰缓存
       delegate.removeObject(eldestKey);
+      // 清空eldestKey
       eldestKey = null;
     }
   }

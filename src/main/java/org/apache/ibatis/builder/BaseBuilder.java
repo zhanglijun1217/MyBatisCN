@@ -36,8 +36,11 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
  *
  */
 public abstract class BaseBuilder {
+  // 全局配置信息字段
   protected final Configuration configuration;
+  // 处理别名
   protected final TypeAliasRegistry typeAliasRegistry;
+  // 处理类型转换
   protected final TypeHandlerRegistry typeHandlerRegistry;
 
   public BaseBuilder(Configuration configuration) {
@@ -175,6 +178,7 @@ public abstract class BaseBuilder {
   /*************根据别名创建handler，结束*************/
 
   protected <T> Class<? extends T> resolveAlias(String alias) {
+    // 根据别名解析类型
     return typeAliasRegistry.resolveAlias(alias);
   }
 }

@@ -101,7 +101,7 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
  * 主要内容分为以下几个部分：
- * 1、大量的配置项，和与`<configuration>`标签中的配置对应
+ * 1、大量的配置项，和与`<configuration>`标签中的配置对应 mybatis-config.xml中的配置内容
  * 2、创建类型别名注册机，并向内注册了大量的类型别名
  * 3、创建了大量Map，包括存储映射语句的Map，存储缓存的Map等，这些Map使用的是一种不允许覆盖的严格Map
  * 4、给出了大量的处理器的创建方法，包括参数处理器、语句处理器、结果处理器、执行器。
@@ -170,7 +170,7 @@ public class Configuration {
   protected final Map<String, MappedStatement> mappedStatements = new StrictMap<MappedStatement>("Mapped Statements collection")
       .conflictMessageProducer((savedValue, targetValue) ->
           ". please check " + savedValue.getResource() + " and " + targetValue.getResource());
-  // 缓存
+  // 缓存 key：缓存中的唯一id(比如二级缓存中的namespace)、value：具体的缓存对象
   protected final Map<String, Cache> caches = new StrictMap<>("Caches collection");
   // 结果映射，即所有的<resultMap>节点
   protected final Map<String, ResultMap> resultMaps = new StrictMap<>("Result Maps collection");
@@ -190,6 +190,7 @@ public class Configuration {
   protected final Collection<MethodResolver> incompleteMethods = new LinkedList<>();
 
   // 用来存储跨namespace的缓存共享设置
+  // key:mapper命名空间 value:被引用共享缓存的命名空间
   protected final Map<String, String> cacheRefMap = new HashMap<>();
 
   public Configuration(Environment environment) {
@@ -944,6 +945,12 @@ public class Configuration {
    * 1、不允许覆盖，如果写入的key已经存在，则会直接报错
    * 2、如果写入的key中包含“.”，例如“com.github.yeecode.clazzName”，
    *    则会分别以“clazzName”和“com.github.yeecode.clazzName”为key，将value存入两次。
+   *
+   * StrictMap 继承了 HashMap，并且覆盖了 HashMap 的一些行为，
+   * 例如，相较于 HashMap 的 put() 方法，StrictMap 的 put() 方法有如下几点不同：如果检测到重复 Key 的写入，会直接抛出异常；
+      在没有重复 Key的情况下，会正常写入 KV 数据，与此同时，还会根据 Key产生一个 shortKey，shortKey 与完整 Key 指向同一个 Value 值；
+      如果 shortKey 已经存在，则将 value 修改成 Ambiguity 对象，Ambiguity 对象表示这个 shortKey 存在二义性，
+      * 后续通过 StrictMap的get() 方法获取该 shortKey 的时候，会抛出异常。
    */
 
   protected static class StrictMap<V> extends HashMap<String, V> {

@@ -74,7 +74,7 @@ public class SelectKeyGenerator implements KeyGenerator {
 
   /**
    * 执行一段SQL语句后获取一个值，然后将该值赋给Java对象的自增属性
-   *
+   * 解释了为什么insert执行完之后 能将自增生成id赋值给PO对象
    * @param executor 执行器
    * @param ms 插入操作的SQL语句（不是生成主键的SQL语句）
    * @param parameter 插入操作的对象

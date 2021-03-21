@@ -46,6 +46,7 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
  * @author Clinton Begin
+ * Executor接口的抽象实现
  */
 public abstract class BaseExecutor implements Executor {
 
@@ -54,14 +55,20 @@ public abstract class BaseExecutor implements Executor {
   protected Transaction transaction;
   protected Executor wrapper;
 
-  protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;
+  protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;// ？
   // 查询操作的结果缓存
+  // mybatis一级缓存就是这里实现的
+  // mybatis一级缓存是
   protected PerpetualCache localCache;
+
   // Callable查询的输出参数缓存
   protected PerpetualCache localOutputParameterCache;
+
   protected Configuration configuration;
 
+  // 查询栈 比如 一次查询可能会多次走到query
   protected int queryStack;
+  // 表示当前executor是否关闭
   private boolean closed;
 
   protected BaseExecutor(Configuration configuration, Transaction transaction) {
@@ -191,6 +198,7 @@ public abstract class BaseExecutor implements Executor {
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
         // 本地缓存中有结果，则对于CALLABLE语句还需要绑定到IN/INOUT参数上
+        // 处理存储过程
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
         // 本地缓存没有结果，故需要查询数据库
@@ -206,6 +214,10 @@ public abstract class BaseExecutor implements Executor {
       }
       deferredLoads.clear();
       // 如果本地缓存的作用域为STATEMENT，则立刻清除本地缓存
+      // 这也是mybatis一级缓存 在 'Statement' 无法共享缓存的原因
+      // 如果此时是结束了查询
+      // mybatis一级缓存生命之周期在sqlSession。多个sqlSession或者分布式的情况下会读到脏数据
+      // 如果要用mybatis的一级缓存 建议设置成statement模式 而不是session模式
       if (configuration.getLocalCacheScope() == LocalCacheScope.STATEMENT) {
         clearLocalCache();
       }

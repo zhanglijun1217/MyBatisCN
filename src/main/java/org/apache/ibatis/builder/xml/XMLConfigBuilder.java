@@ -49,6 +49,8 @@ import org.apache.ibatis.type.JdbcType;
 /**
  * @author Clinton Begin
  * @author Kazuki Shimizu
+ * 由SqlSessionFactoryBuilder.build()方法中创建
+ * 核心功能就是解析 mybatis-config.xml 配置文件
  */
 public class XMLConfigBuilder extends BaseBuilder {
 
@@ -110,7 +112,19 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   /**
-   * 从根节点configuration开始解析下层节点
+   * 从根节点configuration开始解析下层节点 解析内容
+   * 解析 <properties> 标签；
+   * 解析 <settings> 标签；
+   * 处理日志相关组件；
+   * 解析 <typeAliases> 标签；
+   * 解析 <plugins> 标签；
+   * 解析 <objectFactory> 标签；
+   * 解析 <objectWrapperFactory> 标签；
+   * 解析 <reflectorFactory> 标签；
+   * 解析 <environments> 标签；
+   * 解析 <databaseIdProvider> 标签；
+   * 解析 <typeHandlers> 标签；
+   * 解析 <mappers> 标签。
    * @param root 根节点configuration节点
    */
   private void parseConfiguration(XNode root) {
@@ -118,19 +132,39 @@ public class XMLConfigBuilder extends BaseBuilder {
       // 解析信息放入Configuration
       // 首先解析properties，以保证在解析其他节点时便可以生效
       propertiesElement(root.evalNode("properties"));
+      // 处理<settings>标签
       Properties settings = settingsAsProperties(root.evalNode("settings"));
       loadCustomVfs(settings);
       loadCustomLogImpl(settings);
+      // 解析<typeAlias>标签
       typeAliasesElement(root.evalNode("typeAliases"));
+      // 处理<plugin>标签
       pluginElement(root.evalNode("plugins"));
+
+      // 处理<objectFactory>、<objectWrapperFactory>、<reflectorFactory>标签
       objectFactoryElement(root.evalNode("objectFactory"));
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
+
+      // settings中的属性设置到configuration中
       settingsElement(settings);
+
       // read it after objectFactory and objectWrapperFactory issue #631
+      // 设置<environment>标签
       environmentsElement(root.evalNode("environments"));
+
+      // 解析<databaseIdProvider> 标签
+      // 定义需要支持的全部数据库的 DatabaseId
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+
+      // 解析<typeHandler>标签
       typeHandlerElement(root.evalNode("typeHandlers"));
+
+      // 处理<mappers> 标签
+      // <mappers> 标签中会指定 Mapper.xml 映射文件的位置，
+      // 通过解析 <mappers> 标签，MyBatis 就能够知道去哪里加载这些 Mapper.xml 文件了。
+      // 其中会初始化 XMLMapperBuilder 对象来加载各个 Mapper.xml 映射文件。同时，
+      // 还会扫描 Mapper 映射文件相应的 Mapper 接口，处理其中的注解并将 Mapper 接口注册到 MapperRegistry 中。
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -141,10 +175,12 @@ public class XMLConfigBuilder extends BaseBuilder {
     if (context == null) {
       return new Properties();
     }
+    // 处理<settings>标签的所有子标签，也就是<setting>标签，将其name属性和value属性
     Properties props = context.getChildrenAsProperties();
     // Check that all settings are known to the configuration class
     MetaClass metaConfig = MetaClass.forClass(Configuration.class, localReflectorFactory);
     for (Object key : props.keySet()) {
+      // 检查configuration中是否含有settings中属性对应的setter方法
       if (!metaConfig.hasSetter(String.valueOf(key))) {
         throw new BuilderException("The setting " + key + " is not known.  Make sure you spelled it correctly (case sensitive).");
       }
@@ -212,6 +248,7 @@ public class XMLConfigBuilder extends BaseBuilder {
         // 设置拦截器的属性
         interceptorInstance.setProperties(properties);
         // 将当前拦截器加入到拦截器链中
+        // 插件是通过拦截器链实现的
         configuration.addInterceptor(interceptorInstance);
       }
     }
@@ -219,10 +256,14 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void objectFactoryElement(XNode context) throws Exception {
     if (context != null) {
+      // 出去type对应的class
       String type = context.getStringAttribute("type");
+      // <objectFactory>标签对应的属性
       Properties properties = context.getChildrenAsProperties();
       ObjectFactory factory = (ObjectFactory) resolveClass(type).newInstance();
+      // 设置属性
       factory.setProperties(properties);
+      // 设置objectFactory
       configuration.setObjectFactory(factory);
     }
   }
@@ -261,6 +302,7 @@ public class XMLConfigBuilder extends BaseBuilder {
         defaults.putAll(vars);
       }
       parser.setVariables(defaults);
+      // 存入configuratio全局配置的variables变量中
       configuration.setVariables(defaults);
     }
   }
@@ -297,17 +339,25 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void environmentsElement(XNode context) throws Exception {
     if (context != null) {
       if (environment == null) {
+        // default节点
         environment = context.getStringAttribute("default");
       }
+      // 获取<environment>标签下的所有配置
       for (XNode child : context.getChildren()) {
+        // 获取id
         String id = child.getStringAttribute("id");
         if (isSpecifiedEnvironment(id)) {
+         // 获取<transactionManager>、<dataSource>等标签，并进行解析，
+          // 其中会根据配置信息初始化相应的TransactionFactory对象和DataSource对象
           TransactionFactory txFactory = transactionManagerElement(child.evalNode("transactionManager"));
           DataSourceFactory dsFactory = dataSourceElement(child.evalNode("dataSource"));
           DataSource dataSource = dsFactory.getDataSource();
+
+          // 创建Environment对象，并关联创建好的TransactionFactory和DataSource
           Environment.Builder environmentBuilder = new Environment.Builder(id)
               .transactionFactory(txFactory)
               .dataSource(dataSource);
+          // 设置environment变量到configuration中
           configuration.setEnvironment(environmentBuilder.build());
         }
       }
@@ -375,9 +425,11 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void typeHandlerElement(XNode parent) {
     if (parent != null) {
+      // 处理全部<typeHandler>子标签
       for (XNode child : parent.getChildren()) {
         if ("package".equals(child.getName())) {
           String typeHandlerPackage = child.getStringAttribute("name");
+          // 根据包目录取注册typeHandler
           typeHandlerRegistry.register(typeHandlerPackage);
         } else {
           String javaTypeName = child.getStringAttribute("javaType");
@@ -417,14 +469,16 @@ public class XMLConfigBuilder extends BaseBuilder {
         if ("package".equals(child.getName())) { // package节点
           // 取出包的路径
           String mapperPackage = child.getStringAttribute("name");
-          // 全部加入Mappers中
+          // 根据包路径 全部加入Mapper接口到Mappers中
           configuration.addMappers(mapperPackage);
         } else {
-          // resource、url、class这三个属性只有一个生效
+          // mapper节点
+          // resource、url、class这三个属性只有一个生效 三个节点互斥
           String resource = child.getStringAttribute("resource");
           String url = child.getStringAttribute("url");
           String mapperClass = child.getStringAttribute("class");
           if (resource != null && url == null && mapperClass == null) {
+            // 根据resource获取
             ErrorContext.instance().resource(resource);
             // 获取文件的输入流
             InputStream inputStream = Resources.getResourceAsStream(resource);
@@ -432,6 +486,7 @@ public class XMLConfigBuilder extends BaseBuilder {
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource, configuration.getSqlFragments());
             mapperParser.parse();
           } else if (resource == null && url != null && mapperClass == null) {
+            // 使用url
             ErrorContext.instance().resource(url);
             // 从网络获得输入流
             InputStream inputStream = Resources.getUrlAsStream(url);

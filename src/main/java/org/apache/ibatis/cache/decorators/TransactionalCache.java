@@ -32,6 +32,8 @@ import org.apache.ibatis.logging.LogFactory;
  * Blocking cache support has been added. Therefore any get() that returns a cache miss
  * will be followed by a put() so any lock associated with the key can be released.
  *
+ * 作用是如果事务提交，对缓存的操作才会生效，如果事务回滚或者不提交事务，则不对缓存产生影响。
+ *
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
@@ -151,6 +153,7 @@ public class TransactionalCache implements Cache {
     // 将entriesMissedInCache中的数据写入缓存
     for (Object entry : entriesMissedInCache) {
       if (!entriesToAddOnCommit.containsKey(entry)) {
+        // 未命中缓存的也写进null
         delegate.putObject(entry, null);
       }
     }

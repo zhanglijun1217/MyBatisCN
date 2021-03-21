@@ -139,12 +139,25 @@ public class XMLMapperBuilder extends BaseBuilder {
       if (namespace == null || namespace.equals("")) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
+      // 设置命名空间
       builderAssistant.setCurrentNamespace(namespace);
+
       // mapper文件中其他配置节点的解析
+      // <cache-ref>标签解析
+      //  <cache-ref> 标签来引用另一个 namespace 的二级缓存 添加到configuration中的cacheRefMap缓存中
       cacheRefElement(context.evalNode("cache-ref"));
+
+      // <cache>标签 mybatis 二级缓存
+      // 可以通过 <cache> 标签为每个 namespace 开启二级缓存，
+      // 同时还会将 namespace 与关联的二级缓存 Cache对象记录到 Configuration.caches 集合中，
+      // 也就是说二级缓存是 namespace 级别的。
       cacheElement(context.evalNode("cache"));
+
+      // 处理parameterMap
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+      // 处理resultMap
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      // 处理<sql>标签
       sqlElement(context.evalNodes("/mapper/sql"));
       // 处理各个数据库操作语句
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
@@ -166,10 +179,12 @@ public class XMLMapperBuilder extends BaseBuilder {
       // <select id="selectUser" resultType="com.example.demo.UserBean">
       //    select * from `user` where id = #{id}
       //  </select>
+      // 为一个sql语句 创建XMLStatementBuilder
       final XMLStatementBuilder statementParser = new XMLStatementBuilder(configuration, builderAssistant, context, requiredDatabaseId);
       try {
         statementParser.parseStatementNode();
       } catch (IncompleteElementException e) {
+        // 为configuration中添加未成功解析的语句
         configuration.addIncompleteStatement(statementParser);
       }
     }
@@ -222,7 +237,9 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void cacheRefElement(XNode context) {
     if (context != null) {
+      // nameSpace缓存
       configuration.addCacheRef(builderAssistant.getCurrentNamespace(), context.getStringAttribute("namespace"));
+      // 创建一个缓存引用解析器
       CacheRefResolver cacheRefResolver = new CacheRefResolver(builderAssistant, context.getStringAttribute("namespace"));
       try {
         cacheRefResolver.resolveCacheRef();
@@ -246,15 +263,21 @@ public class XMLMapperBuilder extends BaseBuilder {
   // 这里处理其中的<cache>节点
   private void cacheElement(XNode context) {
     if (context != null) {
+      // type属性
       String type = context.getStringAttribute("type", "PERPETUAL");
       Class<? extends Cache> typeClass = typeAliasRegistry.resolveAlias(type);
+      // eviction
       String eviction = context.getStringAttribute("eviction", "LRU");
       Class<? extends Cache> evictionClass = typeAliasRegistry.resolveAlias(eviction);
+      // flushInterval
       Long flushInterval = context.getLongAttribute("flushInterval");
       Integer size = context.getIntAttribute("size");
       boolean readWrite = !context.getBooleanAttribute("readOnly", false);
       boolean blocking = context.getBooleanAttribute("blocking", false);
+      // 子标签属性
       Properties props = context.getChildrenAsProperties();
+
+      // 根据上面解析的信息 创建新的cache对象添加到configuration中
       builderAssistant.useNewCache(typeClass, evictionClass, flushInterval, size, readWrite, blocking, props);
     }
   }
@@ -299,20 +322,37 @@ public class XMLMapperBuilder extends BaseBuilder {
     return resultMapElement(resultMapNode, Collections.emptyList(), null);
   }
 
+
+  /**
+   * 获取 <resultMap> 标签的type 属性值，这个值表示结果集将被映射成 type 指定类型的对象。如果没有指定 type 属性的话，会找其他属性值，优先级依次是：type、ofType、resultType、javaType。在这一步中会确定映射得到的对象类型，这里支持别名转换。
+   * 解析<resultMap>标签下的各个子标签，每个子标签都会生成一个ResultMapping 对象，这个 ResultMapping 对象会被添加到resultMappings 集合（List<ResultMapping> 类型）中暂存。这里会涉及 <id>、<result>、<association>、<collection>、<discriminator> 等子标签的解析。
+   * 获取 <resultMap> 标签的id 属性，默认值会拼装所有父标签的id、value 或 property 属性值。
+   * 获取 <resultMap> 标签的extends、autoMapping 等属性。
+   * 创建 ResultMapResolver 对象，ResultMapResolver 会根据上面解析到的ResultMappings 集合以及 <resultMap> 标签的属性构造 ResultMap 对象，并将其添加到 Configuration.resultMaps 集合（StrictMap 类型）中。
+   * @param resultMapNode
+   * @param additionalResultMappings
+   * @param enclosingType
+   * @return
+   * @throws Exception
+   */
   private ResultMap resultMapElement(XNode resultMapNode, List<ResultMapping> additionalResultMappings, Class<?> enclosingType) throws Exception {
     ErrorContext.instance().activity("processing " + resultMapNode.getValueBasedIdentifier());
     String type = resultMapNode.getStringAttribute("type",
         resultMapNode.getStringAttribute("ofType",
             resultMapNode.getStringAttribute("resultType",
                 resultMapNode.getStringAttribute("javaType"))));
+    // 解析type对应的类
     Class<?> typeClass = resolveClass(type);
     if (typeClass == null) {
       typeClass = inheritEnclosingType(resultMapNode, enclosingType);
     }
     Discriminator discriminator = null;
+
+    // 处理每条resultMapping
     List<ResultMapping> resultMappings = new ArrayList<>();
     resultMappings.addAll(additionalResultMappings);
     List<XNode> resultChildren = resultMapNode.getChildren();
+    // <id>、<result>、<association>、<collection>、<discriminator>
     for (XNode resultChild : resultChildren) {
       if ("constructor".equals(resultChild.getName())) {
         processConstructorElement(resultChild, typeClass, resultMappings);
@@ -323,15 +363,21 @@ public class XMLMapperBuilder extends BaseBuilder {
         if ("id".equals(resultChild.getName())) {
           flags.add(ResultFlag.ID);
         }
+        // 处理单条resultMappping
         resultMappings.add(buildResultMappingFromContext(resultChild, typeClass, flags));
       }
     }
+    // 获取 <resultMap> 标签的id 属性，默认值会拼装所有父标签的id、value 或 property 属性值。
     String id = resultMapNode.getStringAttribute("id",
             resultMapNode.getValueBasedIdentifier());
+    // extends、autoMapping
     String extend = resultMapNode.getStringAttribute("extends");
     Boolean autoMapping = resultMapNode.getBooleanAttribute("autoMapping");
+
+
     ResultMapResolver resultMapResolver = new ResultMapResolver(builderAssistant, id, typeClass, extend, discriminator, resultMappings, autoMapping);
     try {
+      // 解析器创建一个ResultMap
       return resultMapResolver.resolve();
     } catch (IncompleteElementException  e) {
       configuration.addIncompleteResultMap(resultMapResolver);
@@ -394,6 +440,7 @@ public class XMLMapperBuilder extends BaseBuilder {
       String id = context.getStringAttribute("id");
       id = builderAssistant.applyCurrentNamespace(id, false);
       if (databaseIdMatchesCurrent(id, databaseId, requiredDatabaseId)) {
+        // id 和 sql 绑定
         sqlFragments.put(id, context);
       }
     }
@@ -415,6 +462,7 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   private ResultMapping buildResultMappingFromContext(XNode context, Class<?> resultType, List<ResultFlag> flags) throws Exception {
+    // 创建一个resultMapping
     String property;
     if (flags.contains(ResultFlag.CONSTRUCTOR)) {
       property = context.getStringAttribute("name");
@@ -425,8 +473,9 @@ public class XMLMapperBuilder extends BaseBuilder {
     String javaType = context.getStringAttribute("javaType");
     String jdbcType = context.getStringAttribute("jdbcType");
     String nestedSelect = context.getStringAttribute("select");
+    // 如果<association>标签没有指定resultMap属性，那么就是匿名嵌套映射，需要通过processNestedResultMappings()方法解析该匿名的嵌套映射
     String nestedResultMap = context.getStringAttribute("resultMap",
-        processNestedResultMappings(context, Collections.emptyList(), resultType));
+            processNestedResultMappings(context, Collections.emptyList(), resultType));
     String notNullColumn = context.getStringAttribute("notNullColumn");
     String columnPrefix = context.getStringAttribute("columnPrefix");
     String typeHandler = context.getStringAttribute("typeHandler");

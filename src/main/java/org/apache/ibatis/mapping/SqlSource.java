@@ -24,11 +24,14 @@ package org.apache.ibatis.mapping;
 
 /**
  * 一共有四个实现
+ * mybatis用SqlSource接口表达解析之后的sql语句
+ * 其中的 SQL 语句只是一个中间态，可能包含动态 SQL 标签或占位符等信息，无法直接使用
  */
 public interface SqlSource {
 
   /**
    * 获取一个BoundSql对象
+   * // 根据Mapper文件或注解描述的SQL语句，以及传入的实参，返回可执行的SQL
    * @param parameterObject 参数对象
    * @return BoundSql对象
    */

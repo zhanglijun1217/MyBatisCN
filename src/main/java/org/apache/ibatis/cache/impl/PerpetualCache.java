@@ -23,12 +23,15 @@ import org.apache.ibatis.cache.CacheException;
 
 /**
  * @author Clinton Begin
+ * PerpetualCache Cache接口的最基本实现
+ * 具体的装饰者可以持有其 作为"被装饰者"
  */
 public class PerpetualCache implements Cache {
 
   // Cache的id，一般为所在的namespace
   private final String id;
   // 用来存储要缓存的信息
+  // 缓存的操作是委托给这个haspMap操作的
   private Map<Object, Object> cache = new HashMap<>();
 
   public PerpetualCache(String id) {

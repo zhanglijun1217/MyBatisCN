@@ -128,6 +128,7 @@ public class ProviderSqlSource implements SqlSource {
    * @param parameterObject 参数对象
    * @return BoundSql对象
    */
+  @Override
   public BoundSql getBoundSql(Object parameterObject) {
     // 获取SqlSource对象
     SqlSource sqlSource = createSqlSource(parameterObject);

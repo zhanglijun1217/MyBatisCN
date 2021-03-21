@@ -56,6 +56,7 @@ public class XMLScriptBuilder extends BaseBuilder {
 
 
   private void initNodeHandlerMap() {
+    // 初始化各个handler
     nodeHandlerMap.put("trim", new TrimHandler());
     nodeHandlerMap.put("where", new WhereHandler());
     nodeHandlerMap.put("set", new SetHandler());
@@ -79,8 +80,10 @@ public class XMLScriptBuilder extends BaseBuilder {
     SqlSource sqlSource;
     // 根据节点树是否为动态，创建对应的SqlSource对象
     if (isDynamic) {
+      // 动态sqlSource
       sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
     } else {
+      // 原生sql
       sqlSource = new RawSqlSource(configuration, rootSqlNode, parameterType);
     }
     return sqlSource;
@@ -100,24 +103,26 @@ public class XMLScriptBuilder extends BaseBuilder {
       // 循环遍历每一个子XNode
       XNode child = node.newXNode(children.item(i));
       if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) { // CDATASection类型或者Text类型的XNode节点
-        // 获取XNode内的信息
+        // 获取XNode内的信息 即sql语句
         String data = child.getStringBody("");
         TextSqlNode textSqlNode = new TextSqlNode(data);
         // 只要有一个TextSqlNode对象是动态的，则整个MixedSqlNode是动态的
         if (textSqlNode.isDynamic()) {
+          // 如果含有未解析的${}占位符 则为动态的
           contents.add(textSqlNode);
           isDynamic = true;
         } else {
+          // 静态sql
           contents.add(new StaticTextSqlNode(data));
         }
-      } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // 子XNode仍然是Node类型
+      } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // 子XNode仍然是Node类型 一定为动态sql
         String nodeName = child.getNode().getNodeName();
         // 找到对应的处理器
         NodeHandler handler = nodeHandlerMap.get(nodeName);
         if (handler == null) {
           throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
         }
-        // 用处理器处理节点
+        // 用处理器处理节点 // 并将解析得到的SqlNode对象记录到contents集合中
         handler.handleNode(child, contents);
         isDynamic = true;
       }
@@ -126,6 +131,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     return new MixedSqlNode(contents);
   }
 
+  // NodeHandler接口负责解析动态 SQL 内的标签
   private interface NodeHandler {
     /**
      * 该方法将当前节点拼装到节点树中

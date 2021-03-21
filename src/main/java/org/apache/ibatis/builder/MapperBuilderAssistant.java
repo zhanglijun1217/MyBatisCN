@@ -171,6 +171,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .blocking(blocking)
         .properties(props)
         .build();
+    // 添加到caches中
     configuration.addCache(cache);
     currentCache = cache;
     return cache;
@@ -214,6 +215,8 @@ public class MapperBuilderAssistant extends BaseBuilder {
 
   /**
    * 创建结果映射对象
+   * 1.处理extend继承得来的父resultMap 并优先当前覆盖父resultMap
+   * 2.创建当前的ResultMap 并添加到configuration中
    * 入参参照ResultMap属性
    * @return ResultMap对象
    */
@@ -224,7 +227,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       Discriminator discriminator,
       List<ResultMapping> resultMappings,
       Boolean autoMapping) {
+    // namespace.id
     id = applyCurrentNamespace(id, false);
+    // 被继承的namespace.id
     extend = applyCurrentNamespace(extend, true);
 
     // 解析ResultMap的继承关系
@@ -232,12 +237,14 @@ public class MapperBuilderAssistant extends BaseBuilder {
       if (!configuration.hasResultMap(extend)) {
         throw new IncompleteElementException("Could not find a parent resultmap with id '" + extend + "'");
       }
+
       // 获取父级的ResultMap
       ResultMap resultMap = configuration.getResultMap(extend);
       // 获取父级的属性映射
       List<ResultMapping> extendedResultMappings = new ArrayList<>(resultMap.getResultMappings());
       // 删除当前ResultMap中已有的父级属性映射，为当前属性映射覆盖父级属性属性创造条件
       extendedResultMappings.removeAll(resultMappings);
+
       // 如果当前ResultMap设置有构建器，则移除父级构建器
       boolean declaresConstructor = false;
       for (ResultMapping resultMapping : resultMappings) {
@@ -292,6 +299,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return new Discriminator.Builder(configuration, resultMapping, namespaceDiscriminatorMap).build();
   }
 
+  // 添加一个mappedStatement 表达一个完整的sql标签
   public MappedStatement addMappedStatement(
       String id,
       SqlSource sqlSource,
@@ -404,6 +412,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
     return resultMaps;
   }
 
+  // 构建一个resultMapping
   public ResultMapping buildResultMapping(
       Class<?> resultType,
       String property,

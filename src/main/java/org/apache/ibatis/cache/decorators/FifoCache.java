@@ -22,7 +22,7 @@ import org.apache.ibatis.cache.Cache;
 
 /**
  * FIFO (first in, first out) cache decorator.
- *
+ * 先进先出缓存 具有缓存淘汰的功能
  * @author Clinton Begin
  */
 public class FifoCache implements Cache {
@@ -88,6 +88,8 @@ public class FifoCache implements Cache {
   private void cycleKeyList(Object key) {
     keyList.addLast(key);
     if (keyList.size() > size) {
+      // 超过阈值 就进行清理
+      // removeFirst方法 为 null时不会报错
       Object oldestKey = keyList.removeFirst();
       delegate.removeObject(oldestKey);
     }

@@ -23,9 +23,10 @@ import org.apache.ibatis.mapping.ResultMapping;
 
 /**
  * @author Eduardo Macarron
+ * resultMap解析器
  */
 public class ResultMapResolver {
-  // Mapper建造者辅助类
+  // Mapper建造者辅助类 当前mapper
   private final MapperBuilderAssistant assistant;
   // ResultMap的id
   private final String id;

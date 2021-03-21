@@ -35,6 +35,8 @@ import java.util.concurrent.locks.ReadWriteLock;
  *  initialize();
  * }
  * </pre>
+ * Mybatis Cache接口 定义了mybatis缓存的基本能力
+ * 缓存的具体实现采用了装饰器模式
  *
  * @author Clinton Begin
  */

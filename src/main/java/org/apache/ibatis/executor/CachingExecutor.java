@@ -35,12 +35,16 @@ import org.apache.ibatis.transaction.Transaction;
 /**
  * @author Clinton Begin
  * @author Eduardo Macarron
+ * 实现mybatis nameSpace二级缓存的executor 本身也是装饰器模式 executor相关功能还是委托给delegate完成
+ * 自己只是实现了二级缓存的读写功能
+ *
  */
 public class CachingExecutor implements Executor {
 
   // 被装饰的执行器
   private final Executor delegate;
   // 事务缓存管理器
+  // 内部持有 TransactionalCaches(cache、transactionalCache 键值对)
   private final TransactionalCacheManager tcm = new TransactionalCacheManager();
 
   public CachingExecutor(Executor delegate) {
@@ -115,6 +119,7 @@ public class CachingExecutor implements Executor {
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
       throws SQLException {
     // 获取MappedStatement对应的缓存，可能的结果有：该命名空间的缓存、共享的其它命名空间的缓存、无缓存
+    // 这里获取的缓存也是装饰器模式装饰过的缓存 比如：SynchronizedCache -> LoggingCache -> SerializedCache -> LruCache -> PerpetualCache。
     Cache cache = ms.getCache();
     // 如果映射文件未设置<cache>或<cache-ref>则，此处cache变量为null
     if (cache != null) { // 存在缓存
@@ -127,7 +132,7 @@ public class CachingExecutor implements Executor {
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
         if (list == null) { // 缓存中没有结果
-          // 交给被包装的执行器执行
+          // 交给被包装的执行器执行 内部可能查询sqlsession级别缓存、数据库
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
           // 缓存被包装执行器返回的结果
           tcm.putObject(cache, key, list); // issue #578 and #116

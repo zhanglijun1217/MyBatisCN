@@ -27,6 +27,7 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
  * @author Clinton Begin
+ * <resultMap>标签下的子标签对应的实体
  */
 public class ResultMapping {
 
@@ -36,8 +37,16 @@ public class ResultMapping {
   private Class<?> javaType;
   private JdbcType jdbcType;
   private TypeHandler<?> typeHandler;
+
+  // 当前标签的 resultMap 属性值，通过该属性我们可以引用另一个 <resultMap> 标签的id，
+  // 然后由这个被引用的<resultMap> 标签映射结果集中的一部分列。
+  // 这样，我们就可以将一个查询结果集映射成多个对象，同时确定这些对象之间的关联关系。
   private String nestedResultMapId;
+  // 当前标签的select 属性，我们可以通过该属性引用另一个 <select> 标签中的select 语句定义，
+  // 它会将当前列的值作为参数传入这个 select 语句。由于当前结果集可能查询出多行数据，
+  // 那么可能就会导致 select 属性指定的 SQL 语句会执行多次，也就是著名的 N+1 问题。
   private String nestedQueryId;
+
   private Set<String> notNullColumns;
   private String columnPrefix;
   private List<ResultFlag> flags;

@@ -104,10 +104,12 @@ public class CacheBuilder {
    */
   public Cache build() {
     // 设置缓存的默认实现、默认装饰器（仅设置，并未装配）
+    // 将implementation默认值设置为PerpetualCache，在decorators集合中默认添加LruCache装饰器，
+    // 都是在setDefaultImplementations()方法中完成的
     setDefaultImplementations();
-    // 创建默认的缓存
+    // 创建默认的缓存 implementation是类型
     Cache cache = newBaseCacheInstance(implementation, id);
-    // 设置缓存的属性
+    // 设置缓存的属性 通过MetaObject工具
     setCacheProperties(cache);
     if (PerpetualCache.class.equals(cache.getClass())) { // 缓存实现是PerpetualCache，即不是用户自定义的缓存实现
       // 为缓存逐级嵌套自定义的装饰器
@@ -118,9 +120,10 @@ public class CacheBuilder {
         setCacheProperties(cache);
       }
       // 为缓存增加标准的装饰器
+      // 根据readWrite、blocking、clearInterval等配置，添加SerializedCache、ScheduledCache等装饰器
       cache = setStandardDecorators(cache);
     } else if (!LoggingCache.class.isAssignableFrom(cache.getClass())) {
-      // 增加日志装饰器
+      // 为非PerpetualCache 增加日志装饰器
       cache = new LoggingCache(cache);
     }
     // 返回被包装好的缓存
@@ -214,6 +217,7 @@ public class CacheBuilder {
     }
     if (InitializingObject.class.isAssignableFrom(cache.getClass())) {
       try {
+        // 初始化缓存
         ((InitializingObject) cache).initialize();
       } catch (Exception e) {
         throw new CacheException("Failed cache initialization for '"

@@ -21,13 +21,12 @@ import org.apache.ibatis.cache.Cache;
  * @author Clinton Begin
  *
  * 缓存引用解析器
- *
  * 包含了被解析的对象cacheRefNamespace 和对应的解析器MapperBuilderAssistant 因此具有自解析功能。
  */
 public class CacheRefResolver {
-  // Mapper建造者辅助类
+  // 当前namespace关联的Mapper建造者辅助类
   private final MapperBuilderAssistant assistant;
-  // 被应用的namespace，即使用cacheRefNamespace的缓存空间
+  // 被引用的namespace，即使用cacheRefNamespace的缓存空间
   private final String cacheRefNamespace;
 
   public CacheRefResolver(MapperBuilderAssistant assistant, String cacheRefNamespace) {

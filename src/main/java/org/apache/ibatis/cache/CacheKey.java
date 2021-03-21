@@ -24,6 +24,9 @@ import org.apache.ibatis.reflection.ArrayUtil;
 
 /**
  * @author Clinton Begin
+ * 除去hashcode、checksum和count的比较外，只要updatelist中的元素一一对应相等，那么就可以认为是CacheKey相等
+ * 两次执行sql的五项相同 则认为是一个cacheKey
+ *      Statement Id + Offset + Limmit + Sql + Params
  */
 public class CacheKey implements Cloneable, Serializable {
 

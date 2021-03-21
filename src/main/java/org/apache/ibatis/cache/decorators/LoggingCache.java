@@ -90,6 +90,7 @@ public class LoggingCache implements Cache {
   }
 
   private double getHitRatio() {
+    // 提供mybatis缓存命中率
     return (double) hits / (double) requests;
   }
 

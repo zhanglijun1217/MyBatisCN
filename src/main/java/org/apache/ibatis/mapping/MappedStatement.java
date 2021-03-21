@@ -55,8 +55,10 @@ public final class MappedStatement {
   private Integer timeout;
   private StatementType statementType;
   private ResultSetType resultSetType;
+
   //SQL源码，对应于我们所写在配置文件中的SQL语句。包含占位符，无法直接执行。可以展开分析就是分行的sql语句text。
   private SqlSource sqlSource;
+
   private Cache cache;
   // 参数们
   private ParameterMap parameterMap;
@@ -69,6 +71,7 @@ public final class MappedStatement {
   private boolean resultOrdered;
   // 类型，增删改查
   private SqlCommandType sqlCommandType;
+
   private KeyGenerator keyGenerator;
   // 存储了主键的属性名
   private String[] keyProperties;
