@@ -20,7 +20,9 @@ import java.util.List;
 /**
  * @author Clinton Begin
  *
- * 符合节点，需要将节点内的内容循环加到尾部
+ * MixedSqlNode是组合模式中的Composite角色（即树枝节点），即实现了aplly方法，调用了所管理的内部SqlNode集合的apply方法
+ *
+ * 追加逻辑：符合节点，需要将节点内的内容循环加到尾部
  *
  */
 public class MixedSqlNode implements SqlNode {

@@ -17,10 +17,14 @@ package org.apache.ibatis.scripting.xmltags;
 
 /**
  * @author Frank D. Martinez [mnesarco]
+ * 抽象了<bind/> 标签
+ * 核心功能是将一个 OGNL 表达式的值绑定到一个指定的变量名上，并记录到 DynamicContext 上下文中
  */
 public class VarDeclSqlNode implements SqlNode {
 
+  // bind name的值
   private final String name;
+  //  bind value的值 一般是一个OGNL表达式
   private final String expression;
 
   public VarDeclSqlNode(String var, String exp) {
@@ -31,6 +35,7 @@ public class VarDeclSqlNode implements SqlNode {
   @Override
   public boolean apply(DynamicContext context) {
     final Object value = OgnlCache.getValue(expression, context.getBindings());
+    // 塞入到上下文中
     context.bind(name, value);
     return true;
   }

@@ -22,6 +22,11 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
+ * 在动态 SQL 语句中，我们可以使用 <foreach> 标签对一个集合进行迭代。
+ * 在迭代过程中，我们可以通过 index 属性值指定的变量作为元素的下标索引（迭代 Map 集合的话，就是 Key 值），
+ * 使用 item 属性值指定的变量作为集合元素（迭代 Map 集合的话，就是 Value 值）。
+ * 另外，我们还可以通过 open 和 close 属性在迭代开始前和结束后添加相应的字符串，
+ * 也允许使用 separator 属性自定义分隔符。这里要介绍的 ForeachSqlNode 就是 <foreach> 标签的抽象。
  */
 public class ForEachSqlNode implements SqlNode {
   public static final String ITEM_PREFIX = "__frch_";
@@ -30,8 +35,11 @@ public class ForEachSqlNode implements SqlNode {
   private final ExpressionEvaluator evaluator;
   // collection属性的值
   private final String collectionExpression;
+
   // 节点内的内容
   private final SqlNode contents;
+
+
   // open属性的值，即元素左侧插入的字符串
   private final String open;
   // close属性的值，即元素右侧插入的字符串
@@ -42,6 +50,7 @@ public class ForEachSqlNode implements SqlNode {
   private final String item;
   // index属性的值，即元素的编号
   private final String index;
+
   // 配置信息
   private final Configuration configuration;
 
@@ -78,8 +87,9 @@ public class ForEachSqlNode implements SqlNode {
     int i = 0;
     for (Object o : iterable) {
       DynamicContext oldContext = context;
-      if (first || separator == null) { // 第一个元素
+      if (first || separator == null) {
         // 添加元素
+        // 第一个元素追加空字符串
         context = new PrefixedContext(context, "");
       } else {
         // 添加间隔符
@@ -87,7 +97,8 @@ public class ForEachSqlNode implements SqlNode {
       }
       int uniqueNumber = context.getUniqueNumber();
       // Issue #709
-      if (o instanceof Map.Entry) { // 被迭代对象是Map.Entry
+      if (o instanceof Map.Entry) {
+        // 被迭代对象是Map.Entry
         // 将被迭代对象放入上下文环境中
         Map.Entry<Object, Object> mapEntry = (Map.Entry<Object, Object>) o;
         applyIndex(context, mapEntry.getKey(), uniqueNumber);
@@ -143,6 +154,10 @@ public class ForEachSqlNode implements SqlNode {
     return ITEM_PREFIX + item + "_" + i;
   }
 
+  /**
+   * ForEachSqlNode$FilteredDynamicContext 这个内部类，它也是 DynamicContext 的装饰器，
+   * 核心功能是：根据前面在 PrefixedContext 中绑定的各种变量，处理 SQL 片段中的“#{}”占位符。
+   */
   private static class FilteredDynamicContext extends DynamicContext {
     private final DynamicContext delegate;
     private final int index;
@@ -174,6 +189,7 @@ public class ForEachSqlNode implements SqlNode {
 
     @Override
     public void appendSql(String sql) {
+      // 创建识别"#{}"的GenericTokenParser解析器
       GenericTokenParser parser = new GenericTokenParser("#{", "}", content -> {
         String newContent = content.replaceFirst("^\\s*" + item + "(?![^.,:\\s])", itemizeItem(item, index));
         if (itemIndex != null && newContent.equals(content)) {
@@ -181,7 +197,7 @@ public class ForEachSqlNode implements SqlNode {
         }
         return "#{" + newContent + "}";
       });
-
+      // 保存解析后的sql片段
       delegate.appendSql(parser.parse(sql));
     }
 
@@ -193,6 +209,11 @@ public class ForEachSqlNode implements SqlNode {
   }
 
 
+  /**
+   * PrefixedContext 是 DynamicContext 的一个装饰器，其中记录了一个 prefix
+   * 前缀信息（其实就是 <foreach> 标签中的 separator 属性值），
+   * 在其 apply() 方法中会先追加 prefix 前缀（迭代第一个元素的时候，prefix 为空字符串
+   */
   private class PrefixedContext extends DynamicContext {
     private final DynamicContext delegate;
     private final String prefix;

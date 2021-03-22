@@ -34,18 +34,26 @@ import org.apache.ibatis.session.Configuration;
  * @author Clinton Begin
  *
  * 绑定的SQL,是从SqlSource而来，将动态内容都处理完成得到的SQL语句字符串，其中包括?,还有绑定的参数
+ * 这里最终返回的 BoundSql 对象，包含了解析之后的 SQL 语句（sql 字段）、
+ * 每个“#{}”占位符的属性信息（parameterMappings 字段 ，List<ParameterMapping> 类型）、
+ * 实参信息（parameterObject 字段）以及
+ * DynamicContext 中记录的 KV 信息（additionalParameters 集合，Map<String, Object> 类型）。
  */
 public class BoundSql {
 
   // 可能含有“?”占位符的sql语句
   private final String sql;
-  // 参数映射列表
+
+  //每个“#{}”占位符的属性信息
   private final List<ParameterMapping> parameterMappings;
+
   // 实参对象本身
   private final Object parameterObject;
+
   // 实参
   private final Map<String, Object> additionalParameters;
-  // additionalParameters的包装对象
+
+  // additionalParameters的包装对象 为了方便调用反射工具获取、设置值
   private final MetaObject metaParameters;
 
   public BoundSql(Configuration configuration, String sql, List<ParameterMapping> parameterMappings, Object parameterObject) {

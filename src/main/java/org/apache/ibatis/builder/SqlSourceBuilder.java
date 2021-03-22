@@ -31,12 +31,17 @@ import org.apache.ibatis.type.JdbcType;
 /**
  * @author Clinton Begin
  *
- * SqlSource的解析器
+ * SqlSource的解析器  这里的builder也是建造者模式
+ * 上游看下SqlNode
  *
+ * 核心作用：
+ *    解析“#{}”占位符中携带的各种属性，例如，“#{id, javaType=int, jdbcType=NUMERIC, typeHandler=MyTypeHandler}”这个占位符，指定了 javaType、jdbcType、typeHandler 等配置；
+ *    将 SQL 语句中的“#{}”占位符替换成“?”占位符，替换之后的 SQL 语句就可以提交给数据库进行编译了。
+ *  *
  */
 public class SqlSourceBuilder extends BaseBuilder {
 
-  // 能够处理的占位符属性
+  // 能够处理的占位符 #{}属性
   private static final String PARAMETER_PROPERTIES = "javaType,jdbcType,mode,numericScale,resultMap,typeHandler,jdbcTypeName";
 
   public SqlSourceBuilder(Configuration configuration) {

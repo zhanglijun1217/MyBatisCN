@@ -40,13 +40,17 @@ public class DynamicContext {
   public static final String DATABASE_ID_KEY = "_databaseId";
 
   static {
+    // 初始化ognl表单式的runtime信息
     OgnlRuntime.setPropertyAccessor(ContextMap.class, new ContextAccessor());
   }
 
-  // 上下文环境
+  // 上下文环境 用于记录属性kv信息
+  // 读取ContextMap主要在OGNL表达式中
   private final ContextMap bindings;
+
   // 用于拼装SQL语句片段
   private final StringJoiner sqlBuilder = new StringJoiner(" ");
+
   // 解析时的唯一编号，防止解析混乱
   private int uniqueNumber = 0;
 
@@ -65,6 +69,7 @@ public class DynamicContext {
       bindings = new ContextMap(metaObject, existsTypeHandler);
     } else {
       // 上下文信息为空
+      // 对于Map类型的实参，这里会创建一个空的ContextMap对象
       bindings = new ContextMap(null, false);
     }
     // 把参数对象放入上下文信息
@@ -103,11 +108,13 @@ public class DynamicContext {
 
   /**
    * HashMap的子类
+   * 记录用来替换“#{}”占位符的实参
    */
   static class ContextMap extends HashMap<String, Object> {
     private static final long serialVersionUID = 2977601501966151582L;
     // 这里是用户查询时传入的参数对象的包装
     private final MetaObject parameterMetaObject;
+
     private final boolean fallbackParameterObject;
 
     public ContextMap(MetaObject parameterMetaObject, boolean fallbackParameterObject) {
@@ -142,6 +149,7 @@ public class DynamicContext {
       }
 
       if (fallbackParameterObject && !parameterMetaObject.hasGetter(strKey)) {
+        // 获取原始对象
         return parameterMetaObject.getOriginalObject();
       } else {
         return parameterMetaObject.getValue(strKey);
@@ -161,6 +169,7 @@ public class DynamicContext {
         return result;
       }
 
+      // 获取parameterObject
       Object parameterObject = map.get(PARAMETER_OBJECT_KEY);
       if (parameterObject instanceof Map) {
         return ((Map)parameterObject).get(name);

@@ -26,12 +26,13 @@ import org.apache.ibatis.builder.BuilderException;
 /**
  * @author Clinton Begin
  *
- * 表达式求值器
+ * 表达式求值器 底层依赖OGNL表达式
  */
 public class ExpressionEvaluator {
 
   /**
    * 对结果为true/false形式的表达式进行求值
+   * 比如对<if/>标签中test表达式求值
    * @param expression 表达式
    * @param parameterObject 参数对象
    * @return 求值结果
@@ -50,6 +51,7 @@ public class ExpressionEvaluator {
 
   /**
    * 对结果为迭代形式的表达式进行求值
+   * 比如用在<foreach/>标签中求值collection
    * @param expression 表达式
    * @param parameterObject 参数对象
    * @return 求值结果
