@@ -93,12 +93,16 @@ public class SqlSourceBuilder extends BaseBuilder {
     /**
      * 在这里，${}被替换为？
      * 但同时，用户传入的实际参数也被记录了
+     * 会在GenericTokenParser.parse中被调用
      * @param content 包含
      * @return
      */
     @Override
     public String handleToken(String content) {
+      // content是前面通过GenericTokenParser识别到的#{}占位符，
+      // 这里通过buildParameterMapping()方法进行解析，得到ParameterMapping对象
       parameterMappings.add(buildParameterMapping(content));
+      // 返回?代替#{} 占位符
       return "?";
     }
 
