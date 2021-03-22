@@ -37,6 +37,7 @@ public class RawSqlSource implements SqlSource {
   // StaticSqlSource对象
   private final SqlSource sqlSource;
 
+  // 与dynamicSqlSource不同的是：1.不包含动态标签（可能包含#{}）2.初始化不是在getBoundSql方法中（运行时）、而是在Mybatis初始化流程
   public RawSqlSource(Configuration configuration, SqlNode rootSqlNode, Class<?> parameterType) {
     this(configuration, getSql(configuration, rootSqlNode), parameterType);
   }
@@ -50,13 +51,14 @@ public class RawSqlSource implements SqlSource {
 
   private static String getSql(Configuration configuration, SqlNode rootSqlNode) {
     DynamicContext context = new DynamicContext(configuration, null);
+    //  SqlNode.apply() 方法将 SQL 片段组装成完整 SQL
     rootSqlNode.apply(context);
     return context.getSql();
   }
 
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
-    // BoundSql对象由sqlSource属性持有的StaticSqlSource对象返回
+    // BoundSql对象由sqlSource属性持有的StaticSqlSource对象返回 return new BoundSql
     return sqlSource.getBoundSql(parameterObject);
   }
 

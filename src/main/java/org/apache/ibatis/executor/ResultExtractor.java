@@ -38,8 +38,10 @@ public class ResultExtractor {
   public Object extractObjectFromList(List<Object> list, Class<?> targetType) {
     Object value = null;
     if (targetType != null && targetType.isAssignableFrom(list.getClass())) {
+      // 如果targetType就是List 无需转换
       value = list;
     } else if (targetType != null && objectFactory.isCollection(targetType)) {
+      // 如果是collection类型额 反射工具创建一个目标类型并复制内容
       value = objectFactory.create(targetType);
       MetaObject metaObject = configuration.newMetaObject(value);
       metaObject.addAll(list);
@@ -58,6 +60,7 @@ public class ResultExtractor {
       if (list != null && list.size() > 1) {
         throw new ExecutorException("Statement returned more than one row, where no more than one was expected.");
       } else if (list != null && list.size() == 1) {
+        // 只有一个直接返回转换返回
         value = list.get(0);
       }
     }

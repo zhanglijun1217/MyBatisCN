@@ -51,6 +51,7 @@ public class StaticSqlSource implements SqlSource {
    */
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+    // BoundSql是包含解析后的sql、parameterMappings参数列表、用户传入实际参数
     return new BoundSql(configuration, sql, parameterMappings, parameterObject);
   }
 

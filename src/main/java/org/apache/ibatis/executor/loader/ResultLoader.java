@@ -40,13 +40,19 @@ import org.apache.ibatis.transaction.TransactionFactory;
 public class ResultLoader {
 
   protected final Configuration configuration;
+  // 延迟加载的executor
   protected final Executor executor;
   protected final MappedStatement mappedStatement;
+  // 执行sql的时机参数
   protected final Object parameterObject;
+  // 延迟加载的对象类型
   protected final Class<?> targetType;
+
   protected final ObjectFactory objectFactory;
   protected final CacheKey cacheKey;
+  // 延迟执行的sql
   protected final BoundSql boundSql;
+  // 用于转变目标类型
   protected final ResultExtractor resultExtractor;
   protected final long creatorThreadId;
 

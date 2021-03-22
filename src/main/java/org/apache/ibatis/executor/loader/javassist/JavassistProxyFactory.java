@@ -63,9 +63,12 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
     return EnhancedDeserializationProxyImpl.createProxy(target, unloadedProperties, objectFactory, constructorArgTypes, constructorArgs);
   }
 
+  // 创建代理的逻辑
   static Object crateProxy(Class<?> type, MethodHandler callback, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
 
+    // 创建proxyFactory(javassist框架中的）
     ProxyFactory enhancer = new ProxyFactory();
+    // 设置父类
     enhancer.setSuperclass(type);
 
     try {
@@ -84,17 +87,21 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
     Class<?>[] typesArray = constructorArgTypes.toArray(new Class[constructorArgTypes.size()]);
     Object[] valuesArray = constructorArgs.toArray(new Object[constructorArgs.size()]);
     try {
+      // 创建一个子类
       enhanced = enhancer.create(typesArray, valuesArray);
     } catch (Exception e) {
       throw new ExecutorException("Error creating lazy proxy.  Cause: " + e, e);
     }
+    // 设置回调（即代理增强逻辑）
     ((Proxy) enhanced).setHandler(callback);
     return enhanced;
   }
 
   private static class EnhancedResultObjectProxyImpl implements MethodHandler {
-
+    // 类似cglibProxyFactory 代理逻辑都一致
+  // 要代理的类型
     private final Class<?> type;
+    // 延迟加载器
     private final ResultLoaderMap lazyLoader;
     private final boolean aggressive;
     private final Set<String> lazyLoadTriggerMethods;
@@ -114,17 +121,27 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
 
     public static Object createProxy(Object target, ResultLoaderMap lazyLoader, Configuration configuration, ObjectFactory objectFactory, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
       final Class<?> type = target.getClass();
+      // callback为内部类实例
       EnhancedResultObjectProxyImpl callback = new EnhancedResultObjectProxyImpl(type, lazyLoader, configuration, objectFactory, constructorArgTypes, constructorArgs);
+
       Object enhanced = crateProxy(type, callback, constructorArgTypes, constructorArgs);
+
+      // 拷贝属性到创建的代理类（代理类为被代理类的子类）
       PropertyCopier.copyBeanProperties(type, target, enhanced);
       return enhanced;
     }
 
+    //EnhancedResultObjectProxyImpl实现了MethodHandler 并定义了结果集延迟加载的逻辑
+    // 首先，会优先检查全局的 aggressiveLazyLoading 配置和 lazyLoadTriggerMethods 配置。如果 aggressiveLazyLoading 配置为 true，或此次调用方法名称包含于 lazyLoadTriggerMethods 配置的方法名列表中，会立刻将该对象的全部延迟加载属性都加载上来，即触发 ResultLoaderMap.loadAll() 方法。
+    //
+    //接下来，检查此次调用的方法是否为属性对应的 setter 方法，如果是，则该属性已经被赋值，无须再执行延迟加载操作，可以从 ResultLoaderMap 集合中删除该属性以及对应的 ResultLoader 对象。
+    //
+    //最后，检测此次调用的方法是否为属性对应的 getter 方法，如果是，触发对应的 ResultLoader.load() 方法，完成延迟加载。
     @Override
     public Object invoke(Object enhanced, Method method, Method methodProxy, Object[] args) throws Throwable {
       final String methodName = method.getName();
       try {
-        synchronized (lazyLoader) {
+        synchronized (lazyLoader) {// 加锁
           if (WRITE_REPLACE_METHOD.equals(methodName)) {
             Object original;
             if (constructorArgTypes.isEmpty()) {
@@ -143,6 +160,7 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
               // 如果是aggressive，则包括非懒加载属性的读操作也会触发懒加载
               // 同时几个触发方法也会引发所有属性的加载
               if (aggressive || lazyLoadTriggerMethods.contains(methodName)) {
+                // 触发所有懒加载的加载器 进行result的加载
                 lazyLoader.loadAll();
               } else if (PropertyNamer.isSetter(methodName)) {
                 // 调用了赋值方法

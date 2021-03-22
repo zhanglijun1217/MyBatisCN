@@ -30,7 +30,7 @@ public interface ResultSetHandler {
   // 将Statement的执行结果处理为List
   <E> List<E> handleResultSets(Statement stmt) throws SQLException;
 
-  // 将Statement的执行结果处理为Map
+  // 将Statement的执行结果处理为游标
   <E> Cursor<E> handleCursorResultSets(Statement stmt) throws SQLException;
 
   // 处理存储过程的输出结果

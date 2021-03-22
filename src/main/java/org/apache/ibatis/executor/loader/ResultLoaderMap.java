@@ -51,6 +51,7 @@ public class ResultLoaderMap {
 
   // 一个对象持有
   // 尚未完成惰性加载的属性map，key为属性名称的大写
+  // 一个resultMap可以配置多个延迟加载的字段
   private final Map<String, LoadPair> loaderMap = new HashMap<>();
 
   public void addLoader(String property, MetaObject metaResultObject, ResultLoader resultLoader) {
@@ -81,6 +82,7 @@ public class ResultLoaderMap {
   }
 
   // 把该对象的一个属性加载出来
+  // 该方法被 cglib和javassist代理逻辑中调用
   public boolean load(String property) throws SQLException {
     LoadPair pair = loaderMap.remove(property.toUpperCase(Locale.ENGLISH));
     if (pair != null) {

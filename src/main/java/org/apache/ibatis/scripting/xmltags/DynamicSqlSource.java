@@ -51,7 +51,7 @@ public class DynamicSqlSource implements SqlSource {
 
   /**
    * 获取一个BoundSql对象
-   * @param parameterObject 参数对象
+   * @param parameterObject 参数对象 用户传入的实参
    * @return BoundSql对象
    */
   @Override
