@@ -101,6 +101,7 @@ public class XMLMapperBuilder extends BaseBuilder {
     this.builderAssistant = new MapperBuilderAssistant(configuration, resource);
     this.parser = parser;
     this.sqlFragments = sqlFragments;
+
     this.resource = resource;
   }
 
