@@ -25,8 +25,10 @@ import java.sql.SQLException;
  */
 public interface ParameterHandler {
 
+  // 获取参数对象
   Object getParameterObject();
 
+  // 为预编译好的preparedStatement替换参数
   void setParameters(PreparedStatement ps)
       throws SQLException;
 

@@ -45,10 +45,13 @@ public abstract class BaseStatementHandler implements StatementHandler {
   protected final Configuration configuration;
   protected final ObjectFactory objectFactory;
   protected final TypeHandlerRegistry typeHandlerRegistry;
+  // 结果处理器
   protected final ResultSetHandler resultSetHandler;
+  // 参数处理器
   protected final ParameterHandler parameterHandler;
-
+  // 执行器
   protected final Executor executor;
+  // 一个完整的sql标签节点信息
   protected final MappedStatement mappedStatement;
   protected final RowBounds rowBounds;
 
@@ -87,11 +90,13 @@ public abstract class BaseStatementHandler implements StatementHandler {
   }
 
   // 从连接中获取一个Statement，并设置事务超时时间
+  // prepare为executor执行sql方法的流程中调用
   @Override
   public Statement prepare(Connection connection, Integer transactionTimeout) throws SQLException {
     ErrorContext.instance().sql(boundSql.getSql());
     Statement statement = null;
     try {
+      // 子类实现实例化statement
       statement = instantiateStatement(connection);
       setStatementTimeout(statement, transactionTimeout);
       setFetchSize(statement);
@@ -105,7 +110,7 @@ public abstract class BaseStatementHandler implements StatementHandler {
     }
   }
 
-  // 从Connection中实例化Statement
+  // 从Connection中实例化Statement 抽象方法子类实现
   protected abstract Statement instantiateStatement(Connection connection) throws SQLException;
 
   // 设置查询超时时间

@@ -100,6 +100,7 @@ public class DefaultParameterHandler implements ParameterHandler {
           }
           try {
             // 此方法最终根据参数类型，调用java.sql.PreparedStatement类中的参数赋值方法，对SQL语句中的参数赋值
+            // 会调用PreparedStatement.set* 为sql参数赋值
             typeHandler.setParameter(ps, i + 1, value, jdbcType);
           } catch (TypeException | SQLException e) {
             throw new TypeException("Could not set parameters for mapping: " + parameterMapping + ". Cause: " + e, e);
