@@ -22,11 +22,19 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
+ * TrimSqlNode的子类
  */
 public class WhereSqlNode extends TrimSqlNode {
 
   private static List<String> prefixList = Arrays.asList("AND ","OR ","AND\n", "OR\n", "AND\r", "OR\r", "AND\t", "OR\t");
 
+  /**
+   * 在 WhereSqlNode 中将 prefix 设置为“WHERE”字符串，
+   * prefixesToOverride 集合包含 “OR”“AND”“OR\n”“AND\n”“OR\r”“AND\r” 等字符串，
+   * 这样就实现了删除 SQL 片段开头多余的 “AND”“OR” 关键字，并添加“WHERE”关键字的效果。
+   * @param configuration
+   * @param contents
+   */
   public WhereSqlNode(Configuration configuration, SqlNode contents) {
     super(configuration, contents, "WHERE", prefixList, null, null);
   }

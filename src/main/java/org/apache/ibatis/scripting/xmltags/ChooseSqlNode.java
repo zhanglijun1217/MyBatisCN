@@ -19,9 +19,14 @@ import java.util.List;
 
 /**
  * @author Clinton Begin
+ * <choose> 标签会被 MyBatis 解析成 ChooseSqlNode 对象，
+ * <when> 标签会被解析成 IfSqlNode 对象，
+ * <otherwise> 标签会被解析成 MixedSqlNode 对象
  */
 public class ChooseSqlNode implements SqlNode {
+  // 用来记录 <otherwise> 子标签生成的 MixedSqlNode 对象
   private final SqlNode defaultSqlNode;
+  // 用来记录所有 <when> 子标签对应的 IfSqlNode 对象
   private final List<SqlNode> ifSqlNodes;
 
   public ChooseSqlNode(List<SqlNode> ifSqlNodes, SqlNode defaultSqlNode) {

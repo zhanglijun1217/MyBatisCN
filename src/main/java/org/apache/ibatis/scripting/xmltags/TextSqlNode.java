@@ -28,6 +28,7 @@ import org.apache.ibatis.type.SimpleTypeRegistry;
  * 包含${}占位符的动态sql节点
  */
 public class TextSqlNode implements SqlNode {
+  // 记录了包含${}占位符的动态sql内容
   private final String text;
   private final Pattern injectionFilter;
 
@@ -86,6 +87,7 @@ public class TextSqlNode implements SqlNode {
       this.injectionFilter = injectionFilter;
     }
 
+    //  DynamicContext.bindings 这个 ContextMap 中的 KV 数据替换 SQL 语句中的“${}”占位符
     @Override
     public String handleToken(String content) {
       // 拿到用户给出的实参
@@ -95,7 +97,7 @@ public class TextSqlNode implements SqlNode {
       } else if (SimpleTypeRegistry.isSimpleType(parameter.getClass())) {
         context.getBindings().put("value", parameter);
       }
-      // 根据上下文信息，得到占位符中内容的值
+      // 根据上下文信息，得到占位符中内容的值 ognl表达式解析
       Object value = OgnlCache.getValue(content, context.getBindings());
       String srtValue = value == null ? "" : String.valueOf(value); // issue #274 return "" instead of "null"
       checkInjection(srtValue);

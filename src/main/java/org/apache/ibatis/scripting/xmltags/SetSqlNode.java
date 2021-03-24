@@ -22,11 +22,19 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
+ * TrimSqlNode的子类
  */
 public class SetSqlNode extends TrimSqlNode {
 
   private static final List<String> COMMA = Collections.singletonList(",");
 
+  /**在 SetSqlNode 中将 prefix 设置为“SET”关键字，prefixesToOverride
+   * 集合和 suffixesToOverride 集合只包含“，”（逗号）字符串，
+   * 这样就实现了删除 SQL 片段开头和结尾多余的逗号，并添加“SET”关键字的效果。
+   *
+   * @param configuration
+   * @param contents
+   */
   public SetSqlNode(Configuration configuration,SqlNode contents) {
     super(configuration, contents, "SET", COMMA, null, COMMA);
   }

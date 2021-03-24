@@ -24,8 +24,10 @@ package org.apache.ibatis.mapping;
 
 /**
  * 一共有四个实现
- * mybatis用SqlSource接口表达解析之后的sql语句
+ * mybatis用SqlSource接口表达解析之后的sql语句（解析过sqlNode标签信息的）
  * 其中的 SQL 语句只是一个中间态，可能包含动态 SQL 标签或占位符等信息，无法直接使用
+ *
+ * 为了创建MappedStatement
  */
 public interface SqlSource {
 

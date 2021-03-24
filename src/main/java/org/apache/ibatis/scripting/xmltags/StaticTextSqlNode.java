@@ -29,6 +29,7 @@ public class StaticTextSqlNode implements SqlNode {
 
   @Override
   // 最终调用到这里，将节点内容拼接到context后面
+  // 追到到DynamicContext.sqlBuilder末尾
   public boolean apply(DynamicContext context) {
     context.appendSql(text);
     return true;

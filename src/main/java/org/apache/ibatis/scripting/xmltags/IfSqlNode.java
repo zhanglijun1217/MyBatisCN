@@ -22,6 +22,7 @@ package org.apache.ibatis.scripting.xmltags;
 public class IfSqlNode implements SqlNode {
   // 表达式评估器
   private final ExpressionEvaluator evaluator;
+
   // if判断时的测试条件
   private final String test;
   // if成立时，要被拼接的SQL片段信息
