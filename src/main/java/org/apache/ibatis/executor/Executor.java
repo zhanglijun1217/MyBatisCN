@@ -29,6 +29,8 @@ import org.apache.ibatis.transaction.Transaction;
 
 /**
  * @author Clinton Begin
+ * Executor接口中方法主要分为
+ *    数据库操作相关、事务相关、缓存相关
  */
 public interface Executor {
 

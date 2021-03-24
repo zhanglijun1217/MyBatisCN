@@ -65,8 +65,10 @@ public final class MappedStatement {
   // 输出的resultMap放在这里，我们在设置resultMap="UserBean" 时可以设置多个，即resultMap="UserBean，RoleBean"。
   // 因此这里是一个list
   private List<ResultMap> resultMaps;
-  // 执行该语句前是否清除一二级缓存
+
+  // 执行该语句前是否清除一二级缓存 配置
   private boolean flushCacheRequired;
+
   private boolean useCache;
   private boolean resultOrdered;
   // 类型，增删改查

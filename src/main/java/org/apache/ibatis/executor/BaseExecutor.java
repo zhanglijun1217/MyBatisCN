@@ -52,13 +52,14 @@ public abstract class BaseExecutor implements Executor {
 
   private static final Log log = LogFactory.getLog(BaseExecutor.class);
 
+  // 事务接口
   protected Transaction transaction;
+  // wrapper
   protected Executor wrapper;
 
-  protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;// ？
+  protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;
   // 查询操作的结果缓存
   // mybatis一级缓存就是这里实现的
-  // mybatis一级缓存是
   protected PerpetualCache localCache;
 
   // Callable查询的输出参数缓存
@@ -215,7 +216,7 @@ public abstract class BaseExecutor implements Executor {
       deferredLoads.clear();
       // 如果本地缓存的作用域为STATEMENT，则立刻清除本地缓存
       // 这也是mybatis一级缓存 在 'Statement' 无法共享缓存的原因
-      // 如果此时是结束了查询
+
       // mybatis一级缓存生命之周期在sqlSession。多个sqlSession或者分布式的情况下会读到脏数据
       // 如果要用mybatis的一级缓存 建议设置成statement模式 而不是session模式
       if (configuration.getLocalCacheScope() == LocalCacheScope.STATEMENT) {
@@ -246,6 +247,7 @@ public abstract class BaseExecutor implements Executor {
 
   /**
    * 生成查询的缓存的键
+   * 将MappedStatement的Id、SQL的offset、SQL的limit、SQL本身以及SQL中的参数传入了CacheKey这个类，最终构成CacheKey
    * @param ms 映射语句对象
    * @param parameterObject 参数对象
    * @param rowBounds 翻页限制
@@ -300,9 +302,12 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Cannot commit, transaction is already closed");
     }
+    // 清除缓存
     clearLocalCache();
+    // 批处理
     flushStatements();
     if (required) {
+      // 调用事务的提交
       transaction.commit();
     }
   }
@@ -312,9 +317,11 @@ public abstract class BaseExecutor implements Executor {
     if (!closed) {
       try {
         clearLocalCache();
+        // 批处理
         flushStatements(true);
       } finally {
         if (required) {
+          // 调用事务接口的回滚
           transaction.rollback();
         }
       }

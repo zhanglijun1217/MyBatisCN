@@ -37,6 +37,7 @@ public class TransactionalCacheManager {
   }
 
   public void putObject(Cache cache, CacheKey key, Object value) {
+    // transactionCache的putObject只是暂时添加到要提交到缓存中的列表 在commit时再添加到底层的缓存中
     getTransactionalCache(cache).putObject(key, value);
   }
 
