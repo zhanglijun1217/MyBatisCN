@@ -98,9 +98,13 @@ public class MapperMethod {
       }
       case SELECT: // 如果是查询语句
         /**
-         * 如果在方法参数列表中有 ResultHandler 类型的参数存在，则会使用 executeWithResultHandler() 方法完成查询，底层依赖的是 SqlSession.select() 方法，结果集将会交由传入的 ResultHandler 对象进行处理。
-         * 如果方法返回值为集合类型或是数组类型，则会调用 executeForMany() 方法，底层依赖 SqlSession.selectList() 方法进行查询，并将得到的 List 转换成目标集合类型。
-         * 如果方法返回值为 Map 类型，则会调用 executeForMap() 方法，底层依赖 SqlSession.selectMap() 方法完成查询，并将结果集映射成 Map 集合。
+         * 如果在方法参数列表中有 ResultHandler 类型的参数存在，
+         * 则会使用 executeWithResultHandler() 方法完成查询，底层依赖的是 SqlSession.select() 方法，
+         * 结果集将会交由传入的 ResultHandler 对象进行处理。
+         * 如果方法返回值为集合类型或是数组类型，则会调用 executeForMany() 方法，
+         * 底层依赖 SqlSession.selectList() 方法进行查询，并将得到的 List 转换成目标集合类型。
+         * 如果方法返回值为 Map 类型，则会调用 executeForMap() 方法，
+         * 底层依赖 SqlSession.selectMap() 方法完成查询，并将结果集映射成 Map 集合。
          * 针对 Cursor 以及 Optional返回值的处理，也是依赖的 SqlSession 的相关方法完成查询的，这里不再展开。
          */
         if (method.returnsVoid() && method.hasResultHandler()) { // 方法返回值为void，且有结果处理器
@@ -172,6 +176,7 @@ public class MapperMethod {
     Object param = method.convertArgsToSqlCommandParam(args);
     if (method.hasRowBounds()) {
       RowBounds rowBounds = method.extractRowBounds(args);
+      // 调用还是sqlSession的select方法
       sqlSession.select(command.getName(), param, rowBounds, method.extractResultHandler(args));
     } else {
       sqlSession.select(command.getName(), param, method.extractResultHandler(args));
