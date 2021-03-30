@@ -38,7 +38,7 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
   private final SqlSessionFactory sqlSessionFactory;
   // 在构造方法中创建的SqlSession代理对象
   private final SqlSession sqlSessionProxy;
-  // 该变量用来存储被代理的SqlSession对象
+  // 该变量用来存储被代理的SqlSession对象 一条线程获取多次都是这一个sqlSession对象 避免频繁创建sqlSession
   private final ThreadLocal<SqlSession> localSqlSession = new ThreadLocal<>();
 
   /**
@@ -103,6 +103,7 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
   }
 
   public void startManagedSession(ExecutorType execType, boolean autoCommit) {
+    // 缓存当前线程的sqlSession对象
     this.localSqlSession.set(openSession(execType, autoCommit));
   }
 
@@ -220,6 +221,7 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
 
   @Override
   public void select(String statement, ResultHandler handler) {
+    // select方法都是直接调用 sqlSession代理对象
     sqlSessionProxy.select(statement, handler);
   }
 
@@ -288,6 +290,7 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
 
   @Override
   public void commit() {
+    // 判断当前线程中是否有sqlSession
     final SqlSession sqlSession = localSqlSession.get();
     if (sqlSession == null) {
       throw new SqlSessionException("Error:  Cannot commit.  No managed session is started.");
@@ -344,6 +347,7 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
     }
   }
 
+  // 内部的jdk动态代理逻辑
   private class SqlSessionInterceptor implements InvocationHandler {
     public SqlSessionInterceptor() {
         // Prevent Synthetic Access
@@ -351,6 +355,8 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      // 整个代理的逻辑就是判断下当前线程中是否可复用sqlSession
+
       // 尝试从当前线程中取出SqlSession对象
       final SqlSession sqlSession = SqlSessionManager.this.localSqlSession.get();
       if (sqlSession != null) { // 当前线程中确实取出了SqlSession对象

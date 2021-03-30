@@ -33,6 +33,10 @@ import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 
 /**
  * @author Clinton Begin
+ * 主要两个方法创建DefaultSqlSession 对应TransactionFactory中的两个newTransaction方法
+ * openSessionFromDataSource 从数据源中创建
+ * openSessionFromConnection 从已有连接中创建
+ *
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
@@ -115,6 +119,12 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     }
   }
 
+  /**
+   * 上方调用直接提供数据库连接，并在数据库连接的基础上创建DefaultSqlSession
+   * @param execType
+   * @param connection
+   * @return
+   */
   private SqlSession openSessionFromConnection(ExecutorType execType, Connection connection) {
     try {
       boolean autoCommit;

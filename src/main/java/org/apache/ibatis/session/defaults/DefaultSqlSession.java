@@ -206,6 +206,7 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public int update(String statement, Object parameter) {
     try {
+      // 置脏数据标记为true 决定后面事务是否提交、回滚
       dirty = true;
       MappedStatement ms = configuration.getMappedStatement(statement);
       return executor.update(ms, wrapCollection(parameter));

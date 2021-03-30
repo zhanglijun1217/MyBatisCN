@@ -35,6 +35,8 @@ import org.apache.ibatis.transaction.Transaction;
 
 /**
  * @author Clinton Begin
+ * 可重复使用的Executor
+ * 重用 Statement 对象是一种常见的优化手段，主要目的是减少 SQL 预编译开销，同时还会降低 Statement 对象的创建和销毁频率，这在一定程度上可以提升系统性能。
  */
 public class ReuseExecutor extends BaseExecutor {
 
@@ -56,6 +58,7 @@ public class ReuseExecutor extends BaseExecutor {
   public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
     Configuration configuration = ms.getConfiguration();
     StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+    // 之前的流程和SimpleExecutor一样 只不过取Statement的流程是从缓存中取
     Statement stmt = prepareStatement(handler, ms.getStatementLog());
     return handler.query(stmt, resultHandler);
   }
@@ -82,11 +85,13 @@ public class ReuseExecutor extends BaseExecutor {
     BoundSql boundSql = handler.getBoundSql();
     String sql = boundSql.getSql();
     if (hasStatementFor(sql)) {
+      // 从缓存中拿，实现复用
       stmt = getStatement(sql);
       applyTransactionTimeout(stmt);
     } else {
       Connection connection = getConnection(statementLog);
       stmt = handler.prepare(connection, transaction.getTimeout());
+      // 缓存中不存在 写入缓存
       putStatement(sql, stmt);
     }
     handler.parameterize(stmt);

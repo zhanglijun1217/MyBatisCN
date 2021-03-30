@@ -40,9 +40,12 @@ import org.apache.ibatis.transaction.Transaction;
  */
 public class BatchExecutor extends BaseExecutor {
 
+  // doUpdate的返回值
   public static final int BATCH_UPDATE_RETURN_VALUE = Integer.MIN_VALUE + 1002;
 
+  // 批处理sql
   private final List<Statement> statementList = new ArrayList<>();
+  // 批处理对应的结果
   private final List<BatchResult> batchResultList = new ArrayList<>();
   private String currentSql;
   private MappedStatement currentStatement;
@@ -51,6 +54,7 @@ public class BatchExecutor extends BaseExecutor {
     super(configuration, transaction);
   }
 
+  // 处理批处理
   @Override
   public int doUpdate(MappedStatement ms, Object parameterObject) throws SQLException {
     final Configuration configuration = ms.getConfiguration();
@@ -59,6 +63,7 @@ public class BatchExecutor extends BaseExecutor {
     final String sql = boundSql.getSql();
     final Statement stmt;
     if (sql.equals(currentSql) && ms.equals(currentStatement)) {
+      // 比较此次追加的SQL模板与最近一次追加的SQL模板，以及两个MappedStatement对象
       int last = statementList.size() - 1;
       stmt = statementList.get(last);
       applyTransactionTimeout(stmt);
@@ -66,14 +71,17 @@ public class BatchExecutor extends BaseExecutor {
       BatchResult batchResult = batchResultList.get(last);
       batchResult.addParameterObject(parameterObject);
     } else {
+      // 这次追加的SQL模板与最近一次追加的SQL模板不相同
       Connection connection = getConnection(ms.getStatementLog());
       stmt = handler.prepare(connection, transaction.getTimeout());
       handler.parameterize(stmt);    //fix Issues 322
+      // 更新当前sql和MappedStatement 为当前追加的sql
       currentSql = sql;
       currentStatement = ms;
       statementList.add(stmt);
       batchResultList.add(new BatchResult(ms, sql, parameterObject));
     }
+    // 最终调用的是statementHandler的batch方法
     handler.batch(stmt);
     return BATCH_UPDATE_RETURN_VALUE;
   }
@@ -125,6 +133,7 @@ public class BatchExecutor extends BaseExecutor {
         applyTransactionTimeout(stmt);
         BatchResult batchResult = batchResultList.get(i);
         try {
+          // 批处理结果赋值  updateCounts 还有生成主键反写参数实体中
           batchResult.setUpdateCounts(stmt.executeBatch());
           MappedStatement ms = batchResult.getMappedStatement();
           List<Object> parameterObjects = batchResult.getParameterObjects();

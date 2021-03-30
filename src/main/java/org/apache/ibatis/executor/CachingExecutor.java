@@ -134,7 +134,7 @@ public class CachingExecutor implements Executor {
         if (list == null) { // 缓存中没有结果
           // 交给被包装的执行器执行 内部可能查询sqlsession级别缓存、数据库
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
-          // 缓存被包装执行器返回的结果
+          // 缓存被包装执行器返回的结果 这里只是暂存到transactionCache中 最后commit时才添加到缓存中
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;

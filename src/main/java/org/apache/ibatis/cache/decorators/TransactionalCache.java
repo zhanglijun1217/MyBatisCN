@@ -49,6 +49,8 @@ public class TransactionalCache implements Cache {
   // 事务提交时需要写入缓存的数据
   private final Map<Object, Object> entriesToAddOnCommit;
   // 缓存查询未命中的数据
+  // 为什么维护未命中缓存的key?
+  // BlockingCache 的 getObject() 方法会有给 CacheKey 加锁的逻辑，需要在 putObject() 方法或 removeObject() 方法中解锁，否则这个 CacheKey 会被一直锁住，无法使用。
   private final Set<Object> entriesMissedInCache;
 
   public TransactionalCache(Cache delegate) {
@@ -155,7 +157,7 @@ public class TransactionalCache implements Cache {
     // 将entriesMissedInCache中的数据写入缓存
     for (Object entry : entriesMissedInCache) {
       if (!entriesToAddOnCommit.containsKey(entry)) {
-        // 未命中缓存的也写进null
+        // 未命中缓存的也写进null值
         delegate.putObject(entry, null);
       }
     }

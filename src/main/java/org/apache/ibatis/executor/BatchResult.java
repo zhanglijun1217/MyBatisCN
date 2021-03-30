@@ -29,6 +29,7 @@ public class BatchResult {
   private final String sql;
   private final List<Object> parameterObjects;
 
+  // 批处理每条返回的影响条数
   private int[] updateCounts;
 
   public BatchResult(MappedStatement mappedStatement, String sql) {
