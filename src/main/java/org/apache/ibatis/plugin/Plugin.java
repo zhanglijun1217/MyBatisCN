@@ -33,7 +33,7 @@ public class Plugin implements InvocationHandler {
   private final Object target;
   // 拦截器
   private final Interceptor interceptor;
-  // 拦截器要拦截的所有的类，以及类中的方法
+  // 拦截器要拦截的所有的类，以及类中的方法  详情见@Signature 理要拦截的目标方法信息。
   private final Map<Class<?>, Set<Method>> signatureMap;
 
   private Plugin(Object target, Interceptor interceptor, Map<Class<?>, Set<Method>> signatureMap) {
@@ -50,6 +50,9 @@ public class Plugin implements InvocationHandler {
    */
   public static Object wrap(Object target, Interceptor interceptor) {
     // 得到拦截器interceptor要拦截的类型与方法
+    // @Intercepts注解标记
+    //  // 获取自定义Interceptor实现类上的@Signature注解信息，
+    //    // 这里的getSignatureMap()方法会解析@Signature注解，得到要拦截的类以及要拦截的方法集合
     Map<Class<?>, Set<Method>> signatureMap = getSignatureMap(interceptor);
     // 被代理对象的类型
     Class<?> type = target.getClass();
@@ -63,7 +66,7 @@ public class Plugin implements InvocationHandler {
           interfaces,
           new Plugin(target, interceptor, signatureMap));
     }
-    // 直接返回原有被代理对象，这意味着被代理对象的方法不需要被拦截
+    // 直接返回原有被代理对象，这意味着被代理对象的方法不需要被拦截 用返回值代替入参
     return target;
   }
 

@@ -28,6 +28,7 @@ public class PluginTest {
   @Test
   public void mapPluginShouldInterceptGet() {
     Map map = new HashMap();
+    // Plugin是jdk动态代理逻辑  生成target接口对应的动态代理类
     map = (Map) new AlwaysMapPlugin().plugin(map);
     assertEquals("Always", map.get("Anything"));
   }
@@ -40,10 +41,12 @@ public class PluginTest {
   }
 
   @Intercepts({
+          // 拦截了get方法
       @Signature(type = Map.class, method = "get", args = {Object.class})})
   public static class AlwaysMapPlugin implements Interceptor {
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
+      // 拦截逻辑 永远返回always
       return "Always";
     }
 

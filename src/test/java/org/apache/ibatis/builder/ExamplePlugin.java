@@ -27,6 +27,7 @@ public class ExamplePlugin implements Interceptor {
 
   @Override
   public Object intercept(Invocation invocation) throws Throwable {
+    // 调用方法 反射调用 目标对象、方法、方法参数
     return invocation.proceed();
   }
 
